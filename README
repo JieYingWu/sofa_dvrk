@@ -1,2 +1,5 @@
 Requires building CISST libraries for robot 
 
+Spring parameters:
+       1. Steel extension spring with loop ends: 0.0381 m, 9.821882 kg/m
+       2. Music-wire steel extension spring with loop ends: 0.03175 m, 5.35739 kg/m

@@ -17,11 +17,11 @@ class SpringEnv (Sofa.PythonScriptController):
     def output(self):
         return
 
-    def populateRigid(self, node, filename, translation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
+    def populateRigid(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
         node.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         node.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
         node.createObject('MeshObjLoader', name='loader', filename=filename)
-        node.createObject('MechanicalObject', name='mecha', template='Rigid3d', scale3d=scale, translation=translation)
+        node.createObject('MechanicalObject', name='mecha', template='Rigid3d', scale3d=scale, translation=translation, rotation=rotation)
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
@@ -41,18 +41,17 @@ class SpringEnv (Sofa.PythonScriptController):
 
         return 0
     
-    def populateSpring(self, spring, translation):
-        rotation = [-90,0,0]
+    def populateSpring(self, spring, translation, rotation):
         index = [99]
         spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
         spring.createObject('CGLinearSolver', threshold='1e-18', tolerance='1e-12', name='linearSolver', iterations='20')
-        spring.createObject('MeshSTLLoader', name='loader', filename='meshes/spring_mcmaster.STL')
+        spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
         spring.createObject('MeshTopology', name='topo', src='@loader')
         spring.createObject('SparseGridRamificationTopology', n='4 12 3', src='@topo', nbVirtualFinerLevels='3', finestConnectivity='0')
         spring.createObject('MechanicalObject', name='spring', rotation=rotation, translation=translation)
         spring.createObject('HexahedronFEMForceField', youngModulus='3e3', poissonRatio='0.3', method='large', updateStiffnessMatrix='false')
-        spring.createObject('UniformMass', totalMass=1.0)
-        spring.createObject('FixedConstraint', indices=index, name='FixedConstraint')
+        spring.createObject('UniformMass', totalMass=1.0, showAxisSizeFactor=100)
+#        spring.createObject('FixedConstraint', indices=index, name='FixedConstraint')
         spring.createObject('UncoupledConstraintCorrection')
 
         # rootNode/Spring/VisuSpring
@@ -71,7 +70,7 @@ class SpringEnv (Sofa.PythonScriptController):
         return 0
     
     def createGraph(self,rootNode):
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython MultiThreading')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython MultiThreading SofaOpenglVisual')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels showInteractionForceFields showForceFields')
         rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
@@ -84,55 +83,93 @@ class SpringEnv (Sofa.PythonScriptController):
 
         # rootNode/Floor
         scale=[10, 1, 10]
-        translation = [100, 0, 100]
+#        translation = [100, 0, 100]
         Floor = rootNode.createChild('Floor')
         self.Floor = Floor
         Floor.createObject('MeshObjLoader', name='loader', filename='mesh/floorFlat.obj')
         Floor.createObject('MeshTopology', src='@loader')
-        Floor.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale, translation=translation)
+        Floor.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale)
         Floor.createObject('TTriangleModel', simulated=0, moving=0)
         Floor.createObject('TLineModel', simulated=0, moving=0)
         Floor.createObject('TPointModel', simulated=0, moving=0)
-        Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale, translation=translation)
-        
-        # rootNode/Spring
-        offset = 70
-        translation = [0,2,0]
-        Spring = rootNode.createChild('Spring')
-        self.populateSpring(Spring, translation)
-        self.Spring = Spring
+        Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale)
+
+        # rootNode/Tabletop
+        tableWidth = 195
+        tableHeight = 85
+        scale = [tableWidth/150, 32/4, tableWidth/150]
+        translation = [0, tableHeight, 0]
+        Tabletop = rootNode.createChild('Tabletop')
+        self.populateRigid(Tabletop, 'mesh/floor.obj', translation=translation, scale=scale, mass=10.0, color='green')
+        self.Tabletop = Tabletop
+
+        # rootNode/Support0
+        supportHeight = 140
+        scale = [1.86, supportHeight/7, 6.86]
+        offset = tableWidth/2+20
+        height = supportHeight/2
+        translation = [-offset, height, 0]
+        Support0 = rootNode.createChild('Support0')
+        self.populateRigid(Support0, 'mesh/smCube27.obj', translation=translation, scale=scale, mass=10.0, color='green')
+        self.Support0 = Support0
+
+        # rootNode/Support1
+        translation = [0, height, -offset]
+        rotation = [0, 90, 0]
+        Support1 = rootNode.createChild('Support1')
+        self.populateRigid(Support1, 'mesh/smCube27.obj', translation=translation, rotation=rotation, scale=scale, mass=10.0, color='green')
+        self.Support1 = Support1
+
+        # rootNode/Support2
+        translation = [offset, height, 0]
+        rotation = [0, 180, 0]
+        Support2 = rootNode.createChild('Support2')
+        self.populateRigid(Support2, 'mesh/smCube27.obj', translation=translation, rotation=rotation, scale=scale, mass=10.0, color='green')
+        self.Support2 = Support2
+
+        # rootNode/Support3
+        translation = [0, height, offset]
+        rotation = [0, 270, 0]
+        Support3 = rootNode.createChild('Support3')
+        self.populateRigid(Support3, 'mesh/smCube27.obj', translation=translation, rotation=rotation, scale=scale, mass=10.0, color='green')
+        self.Support3 = Support3
+
+        # rootNode/Spring0
+        offset = tableWidth/2
+        springHeight = tableHeight + 5
+        translation = [-offset, springHeight, 0]
+        rotation = [0, 0, -45]
+        Spring0 = rootNode.createChild('Spring0')
+        self.populateSpring(Spring0, translation, rotation)
+        self.Spring0 = Spring0
 
         # rootNode/Spring1
-        translation=[offset,2,0]
+        translation=[0, springHeight, -offset]
+        rotation = [0, 90, -45]
         Spring1 = rootNode.createChild('Spring1')
-        self.populateSpring(Spring1, translation)
+        self.populateSpring(Spring1, translation, rotation)
         self.Spring1 = Spring1
 
         # rootNode/Spring2
-        translation=[0,2,offset]
+        translation=[offset, springHeight, 0]
+        rotation = [0, 0, -45]
         Spring2 = rootNode.createChild('Spring2')
-        self.populateSpring(Spring2, translation)
+        self.populateSpring(Spring2, translation, rotation)
         self.Spring2 = Spring2
 
         # rootNode/Spring3
-        translation=[offset,2,offset]
+        translation=[0, springHeight, offset]
+        rotation = [0, 0, -45]
         Spring3 = rootNode.createChild('Spring3')
-        self.populateSpring(Spring3, translation)
+        self.populateSpring(Spring3, translation, rotation)
         self.Spring3 = Spring3
-
-        # rootNode/Tabletop
-        scale = [2,2,2]
-        translation = [38, 66, 32]
-        Tabletop = rootNode.createChild('Tabletop')
-        self.populateRigid(Tabletop, 'mesh/floorFlat.obj', translation=translation, scale=scale, mass=10.0, color='green')
-        self.Tabletop = Tabletop
         
         # rootNode/Cylinder
-        scale = [0.8, 0.8, 0.8]
-        translation = [22, 70, -48]
-        Cylinder = rootNode.createChild('Cylinder')
-        self.populateRigid(Cylinder, 'meshes/cylinder_rot.obj', translation=translation, scale=scale, mass=1e5, color='blue')
-        self.Cylinder = Cylinder
+        # scale = [0.8, 0.8, 0.8]
+        # translation = [22, 70, -48]
+        # Cylinder = rootNode.createChild('Cylinder')
+        # self.populateRigid(Cylinder, 'meshes/cylinder_rot.obj', translation=translation, scale=scale, mass=1e5, color='blue')
+        # self.Cylinder = Cylinder
         
         return 0
 
