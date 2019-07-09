@@ -1,6 +1,2 @@
 Requires building CISST libraries for robot 
 
-To test the server/client model
-1. runSofa TutorialForceFieldLiverFEMPython.py
-2. python test_client.py
-
