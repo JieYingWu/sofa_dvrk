@@ -48,11 +48,11 @@ class SpringEnv (Sofa.PythonScriptController):
         Spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
         Spring.createObject('CGLinearSolver', threshold='1e-18', tolerance='1e-12', name='linearSolver', iterations='20')
 
-        Spring.createObject('MeshSTLLoader', name='loader', filename='meshes/Spring.STL')
+        Spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
         Spring.createObject('MeshTopology', name='topo', src='@loader')
         Spring.createObject('SparseGridRamificationTopology', n='4 12 3', src='@topo', nbVirtualFinerLevels='3', finestConnectivity='0')
-        Spring.createObject('MechanicalObject', name='spring', rotation='0 0 90', translation=[0, -2, 0])
-        Spring.createObject('HexahedronFEMForceField', youngModulus='3e3', poissonRatio='0.3', method='large', updateStiffnessMatrix='false')
+        Spring.createObject('MechanicalObject', name='spring', rotation='0 0 90', translation=[0, 25, 0])
+        Spring.createObject('HexahedronFEMForceField', youngModulus='3e17', poissonRatio='0.4', method='large', updateStiffnessMatrix='false')
         Spring.createObject('UniformMass', totalMass='1.0')
 #        Spring.createObject('FixedConstraint', indices='93', name='FixedConstraint')
         Spring.createObject('UncoupledConstraintCorrection')
@@ -70,94 +70,94 @@ class SpringEnv (Sofa.PythonScriptController):
         CollSpring.createObject('TPointModel')
         CollSpring.createObject('BarycentricMapping', input='@..', output='@.')
 
-        # rootNode/Spring1
-        rotation = [-90,0,0]
-        translation=[45,2,15]
-        Spring1 = rootNode.createChild('Spring1')
-        self.Spring1 = Spring1
-        Spring1.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness=0.03, rayleighMass=1)
-        Spring1.createObject('CGLinearSolver', threshold=1e-9, tolerance=1e-9, iterations=20)
+#         # rootNode/Spring1
+#         rotation = [-90,0,0]
+#         translation=[45,2,15]
+#         Spring1 = rootNode.createChild('Spring1')
+#         self.Spring1 = Spring1
+#         Spring1.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness=0.03, rayleighMass=1)
+#         Spring1.createObject('CGLinearSolver', threshold=1e-9, tolerance=1e-9, iterations=20)
 
-        Spring1.createObject('MeshSTLLoader', name='loader', filename='meshes/spring_mcmaster.STL')
-        Spring1.createObject('MeshTopology', name='topo', src='@loader')
+#         Spring1.createObject('MeshSTLLoader', name='loader', filename='meshes/spring_mcmaster.stl')
+#         Spring1.createObject('MeshTopology', name='topo', src='@loader')
 
-#        Spring1.createObject('TriangleSetTopologyContainer', name='topo', src='@loader')
-#        Spring1.createObject('TriangleSetGeometryAlgorithms', name='algo', template='Vec3d', recomputeTrianglesOrientation=1)
+# #        Spring1.createObject('TriangleSetTopologyContainer', name='topo', src='@loader')
+# #        Spring1.createObject('TriangleSetGeometryAlgorithms', name='algo', template='Vec3d', recomputeTrianglesOrientation=1)
         
-        Spring1.createObject('SparseGridRamificationTopology', n=[4, 12, 3], src='@topo', nbVirtualFinerLevels=3, finestConnectivity=0)
-        Spring1.createObject('MechanicalObject', name='spring', template='Vec3d', rotation=rotation, translation=translation)
-        Spring1.createObject('HexahedronFEMForceField', youngModulus='3e3', poissonRatio='0.3', method='large', updateStiffnessMatrix='false')
-#        Spring1.createObject('TriangularFEMForceField', youngModulus=3e5, poissonRatio=0.3, method='large')
-#        Spring1.createObject('TriangularBendingSprings', stiffness=6e5, damping=1.0)
+#         Spring1.createObject('SparseGridRamificationTopology', n=[4, 12, 3], src='@topo', nbVirtualFinerLevels=3, finestConnectivity=0)
+#         Spring1.createObject('MechanicalObject', name='spring', template='Vec3d', rotation=rotation, translation=translation)
+#         Spring1.createObject('HexahedronFEMForceField', youngModulus='3e3', poissonRatio='0.3', method='large', updateStiffnessMatrix='false')
+# #        Spring1.createObject('TriangularFEMForceField', youngModulus=3e5, poissonRatio=0.3, method='large')
+# #        Spring1.createObject('TriangularBendingSprings', stiffness=6e5, damping=1.0)
                
-        Spring1.createObject('UniformMass', totalMass=1.0)
-        Spring1.createObject('UncoupledConstraintCorrection')
+#         Spring1.createObject('UniformMass', totalMass=1.0)
+#         Spring1.createObject('UncoupledConstraintCorrection')
 
-        # rootNode/Spring1/VisuSpring1
-        VisuSpring1 = Spring1.createChild('VisuSpring1')
-        VisuSpring1.createObject('OglModel', name='visu', src='@../loader')
-        VisuSpring1.createObject('BarycentricMapping', input='@../spring', output='@visu')
+#         # rootNode/Spring1/VisuSpring1
+#         VisuSpring1 = Spring1.createChild('VisuSpring1')
+#         VisuSpring1.createObject('OglModel', name='visu', src='@../loader')
+#         VisuSpring1.createObject('BarycentricMapping', input='@../spring', output='@visu')
 
-        # rootNode/Spring1/CollSpring1
-        CollSpring1 = Spring1.createChild('CollSpring1')
-        CollSpring1.createObject('MechanicalObject', name='coll', src="@../loader")
-        CollSpring1.createObject('TTriangleModel')
-        CollSpring1.createObject('TLineModel')
-        CollSpring1.createObject('TPointModel')
-        CollSpring1.createObject('BarycentricMapping', input='@..', output='@.')
+#         # rootNode/Spring1/CollSpring1
+#         CollSpring1 = Spring1.createChild('CollSpring1')
+#         CollSpring1.createObject('MechanicalObject', name='coll', src="@../loader")
+#         CollSpring1.createObject('TTriangleModel')
+#         CollSpring1.createObject('TLineModel')
+#         CollSpring1.createObject('TPointModel')
+#         CollSpring1.createObject('BarycentricMapping', input='@..', output='@.')
 
         
-        # rootNode/Cylinder
-        scale = [0.8, 0.8, 0.8]
-        translation = [-30, 100, -65]
-        Cylinder = rootNode.createChild('Cylinder')
-        self.Cylinder = Cylinder
-        Cylinder.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
-        Cylinder.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
-        Cylinder.createObject('MeshObjLoader', name='loader_cyl', filename='meshes/cylinder_rot.obj')
-        Cylinder.createObject('MechanicalObject', name='Cyl', template='Rigid3d', scale3d=scale, translation=translation)
-        Cylinder.createObject('UniformMass', totalMass='10000.0')
-        Cylinder.createObject('UncoupledConstraintCorrection')
+        # # rootNode/Cylinder
+        # scale = [0.8, 0.8, 0.8]
+        # translation = [-30, 100, -65]
+        # Cylinder = rootNode.createChild('Cylinder')
+        # self.Cylinder = Cylinder
+        # Cylinder.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        # Cylinder.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
+        # Cylinder.createObject('MeshObjLoader', name='loader_cyl', filename='meshes/cylinder_rot.obj')
+        # Cylinder.createObject('MechanicalObject', name='Cyl', template='Rigid3d', scale3d=scale, translation=translation)
+        # Cylinder.createObject('UniformMass', totalMass='10000.0')
+        # Cylinder.createObject('UncoupledConstraintCorrection')
+
+        # # # Visual Node
+        # VisuNode = Cylinder.createChild('Visu_Cyl')
+        # VisuNode.createObject('OglModel', name='visual_cyl', src='@../loader_cyl', color='green', scale3d=scale)#, translation=translation)
+        # VisuNode.createObject('RigidMapping', input='@..', output='@visual_cyl')
+
+        # # # Collision Node
+        # CollNode = Cylinder.createChild('Coll_Cyl')
+        # CollNode.createObject('MeshTopology', src="@../loader_cyl")
+        # CollNode.createObject('MechanicalObject', src='@../loader_cyl', scale3d=scale)#, translation=translation)
+        # CollNode.createObject('TPointModel')
+        # CollNode.createObject('TLineModel')
+        # CollNode.createObject('TTriangleModel')
+        # CollNode.createObject('RigidMapping')
+
+        # # rootNode/Cylinder1
+        # scale = [0.8, 0.8, 0.8]
+        # translation = [30, 100, -65]
+        # Cylinder1 = rootNode.createChild('Cylinder1')
+        # self.Cylinder1 = Cylinder1
+        # Cylinder1.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        # Cylinder1.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
+        # Cylinder1.createObject('MeshObjLoader', name='loader_cyl', filename='meshes/cylinder_rot.obj')
+        # Cylinder1.createObject('MechanicalObject', name='Cyl', template='Rigid3d', scale3d=scale, translation=translation)
+        # Cylinder1.createObject('UniformMass', totalMass='10000.0')
+        # Cylinder1.createObject('UncoupledConstraintCorrection')
 
         # # Visual Node
-        VisuNode = Cylinder.createChild('Visu_Cyl')
-        VisuNode.createObject('OglModel', name='visual_cyl', src='@../loader_cyl', color='green', scale3d=scale)#, translation=translation)
-        VisuNode.createObject('RigidMapping', input='@..', output='@visual_cyl')
+        # VisuNode1 = Cylinder1.createChild('Visu_Cyl')
+        # VisuNode1.createObject('OglModel', name='visual_cyl', src='@../loader_cyl', color='yellow', scale3d=scale)#, translation=translation)
+        # VisuNode1.createObject('RigidMapping', input='@..', output='@visual_cyl')
 
         # # Collision Node
-        CollNode = Cylinder.createChild('Coll_Cyl')
-        CollNode.createObject('MeshTopology', src="@../loader_cyl")
-        CollNode.createObject('MechanicalObject', src='@../loader_cyl', scale3d=scale)#, translation=translation)
-        CollNode.createObject('TPointModel')
-        CollNode.createObject('TLineModel')
-        CollNode.createObject('TTriangleModel')
-        CollNode.createObject('RigidMapping')
-
-        # rootNode/Cylinder1
-        scale = [0.8, 0.8, 0.8]
-        translation = [30, 100, -65]
-        Cylinder1 = rootNode.createChild('Cylinder1')
-        self.Cylinder1 = Cylinder1
-        Cylinder1.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
-        Cylinder1.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
-        Cylinder1.createObject('MeshObjLoader', name='loader_cyl', filename='meshes/cylinder_rot.obj')
-        Cylinder1.createObject('MechanicalObject', name='Cyl', template='Rigid3d', scale3d=scale, translation=translation)
-        Cylinder1.createObject('UniformMass', totalMass='10000.0')
-        Cylinder1.createObject('UncoupledConstraintCorrection')
-
-        # Visual Node
-        VisuNode1 = Cylinder1.createChild('Visu_Cyl')
-        VisuNode1.createObject('OglModel', name='visual_cyl', src='@../loader_cyl', color='yellow', scale3d=scale)#, translation=translation)
-        VisuNode1.createObject('RigidMapping', input='@..', output='@visual_cyl')
-
-        # Collision Node
-        CollNode1 = Cylinder1.createChild('Coll_Cyl')
-        CollNode1.createObject('MeshTopology', src="@../loader_cyl")
-        CollNode1.createObject('MechanicalObject', src='@../loader_cyl', scale3d=scale)#, translation=translation)
-        CollNode1.createObject('TPointModel')
-        CollNode1.createObject('TLineModel')
-        CollNode1.createObject('TTriangleModel')
-        CollNode1.createObject('RigidMapping')
+        # CollNode1 = Cylinder1.createChild('Coll_Cyl')
+        # CollNode1.createObject('MeshTopology', src="@../loader_cyl")
+        # CollNode1.createObject('MechanicalObject', src='@../loader_cyl', scale3d=scale)#, translation=translation)
+        # CollNode1.createObject('TPointModel')
+        # CollNode1.createObject('TLineModel')
+        # CollNode1.createObject('TTriangleModel')
+        # CollNode1.createObject('RigidMapping')
         
         return 0
 
@@ -299,7 +299,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
 def createScene(rootNode):
     rootNode.findData('dt').value = '0.02'
-    rootNode.findData('gravity').value = '0 -50 0'
+    rootNode.findData('gravity').value = '0 -100 0'
     try : 
         sys.argv[0]
     except :
