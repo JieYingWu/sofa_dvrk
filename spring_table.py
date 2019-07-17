@@ -17,10 +17,24 @@ class SpringEnv (Sofa.PythonScriptController):
     def output(self):
         return
 
+
+    def populateNonMoving(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
+        node.createObject('MeshSTLLoader', name='loader', filename=filename)
+        node.createObject('MeshTopology', src='@loader')
+        node.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale, translation=translation, rotation=rotation)
+        node.createObject('TTriangleModel', simulated=0, moving=0)
+        node.createObject('TLineModel', simulated=0, moving=0)
+        node.createObject('TPointModel', simulated=0, moving=0)
+        node.createObject('OglModel', name='visu', src='@loader', scale3d=scale, translation=translation, rotation=rotation, color=color)
+        
+
     def populateRigid(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
         node.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
-        node.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
-        node.createObject('MeshObjLoader', name='loader', filename=filename)
+        node.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='15')
+        if (filename[-4:] == '.obj'):
+            node.createObject('MeshObjLoader', name='loader', filename=filename)
+        elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
+            node.createObject('MeshSTLLoader', name='loader', filename=filename)
         node.createObject('MechanicalObject', name='mecha', template='Rigid3d', scale3d=scale, translation=translation, rotation=rotation)
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
@@ -44,12 +58,12 @@ class SpringEnv (Sofa.PythonScriptController):
     def populateSpring(self, spring, translation, rotation):
         index = [99]
         spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
-        spring.createObject('CGLinearSolver', threshold='1e-18', tolerance='1e-12', name='linearSolver', iterations='20')
+        spring.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='20')
         spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
         spring.createObject('MeshTopology', name='topo', src='@loader')
         spring.createObject('SparseGridRamificationTopology', n='4 12 3', src='@topo', nbVirtualFinerLevels='3', finestConnectivity='0')
         spring.createObject('MechanicalObject', name='spring', rotation=rotation, translation=translation)
-        spring.createObject('HexahedronFEMForceField', youngModulus='3e3', poissonRatio='0.3', method='large', updateStiffnessMatrix='false')
+        spring.createObject('HexahedronFEMForceField', youngModulus='3e17', poissonRatio='0.4', method='large', updateStiffnessMatrix='false')
         spring.createObject('UniformMass', totalMass=1.0, showAxisSizeFactor=100)
 #        spring.createObject('FixedConstraint', indices=index, name='FixedConstraint')
         spring.createObject('UncoupledConstraintCorrection')
@@ -76,7 +90,7 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)
         rootNode.createObject('BruteForceDetection', name='N2')
-        rootNode.createObject('MinProximityIntersection', contactDistance=0.5, alarmDistance=0.5)
+        rootNode.createObject('MinProximityIntersection', contactDistance=0.1, alarmDistance=0.5)
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
         # rootNode.createObject('AnimationLoopParallelScheduler', threadNumber=2)
@@ -95,71 +109,73 @@ class SpringEnv (Sofa.PythonScriptController):
         Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale)
 
         # rootNode/Tabletop
-        tableWidth = 195
-        tableHeight = 85
-        scale = [tableWidth/150, 32/4, tableWidth/150]
+        tableWidth = 95.7
+        tableHeight = 72
+        scale = [1, 1, 1]
         translation = [0, tableHeight, 0]
         Tabletop = rootNode.createChild('Tabletop')
-        self.populateRigid(Tabletop, 'mesh/floor.obj', translation=translation, scale=scale, mass=10.0, color='green')
+        self.populateRigid(Tabletop, 'meshes/lego_platform.STL', translation=translation, scale=scale, mass=100.0, color='green')
         self.Tabletop = Tabletop
 
         # rootNode/Support0
-        supportHeight = 140
-        scale = [1.86, supportHeight/7, 6.86]
-        offset = tableWidth/2+20
+        supportHeight = 95.7
+        offset = tableWidth/2+16
         height = supportHeight/2
         translation = [-offset, height, 0]
         Support0 = rootNode.createChild('Support0')
-        self.populateRigid(Support0, 'mesh/smCube27.obj', translation=translation, scale=scale, mass=10.0, color='green')
+        self.populateNonMoving(Support0, 'meshes/lego_support.STL', translation=translation, scale=scale, color='blue')
         self.Support0 = Support0
 
         # rootNode/Support1
         translation = [0, height, -offset]
         rotation = [0, 90, 0]
         Support1 = rootNode.createChild('Support1')
-        self.populateRigid(Support1, 'mesh/smCube27.obj', translation=translation, rotation=rotation, scale=scale, mass=10.0, color='green')
+        self.populateNonMoving(Support1, 'meshes/lego_support.STL', translation=translation, rotation=rotation, scale=scale, color='blue')
         self.Support1 = Support1
 
         # rootNode/Support2
         translation = [offset, height, 0]
         rotation = [0, 180, 0]
         Support2 = rootNode.createChild('Support2')
-        self.populateRigid(Support2, 'mesh/smCube27.obj', translation=translation, rotation=rotation, scale=scale, mass=10.0, color='green')
+        self.populateNonMoving(Support2, 'meshes/lego_support.STL', translation=translation, rotation=rotation, scale=scale, color='blue')
         self.Support2 = Support2
 
         # rootNode/Support3
         translation = [0, height, offset]
         rotation = [0, 270, 0]
         Support3 = rootNode.createChild('Support3')
-        self.populateRigid(Support3, 'mesh/smCube27.obj', translation=translation, rotation=rotation, scale=scale, mass=10.0, color='green')
+        self.populateNonMoving(Support3, 'meshes/lego_support.STL', translation=translation, rotation=rotation, scale=scale, color='blue')
         self.Support3 = Support3
 
         # rootNode/Spring0
-        offset = tableWidth/2
-        springHeight = tableHeight + 5
+        offset = tableWidth/2+4
+        springAngle = 32
+        springLength = 38.1
+        springHeight = tableHeight - 1  # + springLength * math.sin(springAngle*math.pi/180) / 2
         translation = [-offset, springHeight, 0]
-        rotation = [0, 0, -45]
+        rotation = [0, 0, -springAngle]
         Spring0 = rootNode.createChild('Spring0')
         self.populateSpring(Spring0, translation, rotation)
         self.Spring0 = Spring0
 
         # rootNode/Spring1
         translation=[0, springHeight, -offset]
-        rotation = [0, 90, -45]
+        # Euler angle in XYZ form
+        rotation = [-90, 90-springAngle, 90]
         Spring1 = rootNode.createChild('Spring1')
         self.populateSpring(Spring1, translation, rotation)
         self.Spring1 = Spring1
 
         # rootNode/Spring2
         translation=[offset, springHeight, 0]
-        rotation = [0, 0, -45]
+        rotation = [0, 0, springAngle]
         Spring2 = rootNode.createChild('Spring2')
         self.populateSpring(Spring2, translation, rotation)
         self.Spring2 = Spring2
 
         # rootNode/Spring3
         translation=[0, springHeight, offset]
-        rotation = [0, 0, -45]
+        rotation = [90, -(90-springAngle), 90]
         Spring3 = rootNode.createChild('Spring3')
         self.populateSpring(Spring3, translation, rotation)
         self.Spring3 = Spring3
@@ -311,7 +327,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
 def createScene(rootNode):
     rootNode.findData('dt').value = '0.02'
-    rootNode.findData('gravity').value = '0 -50 0'
+    rootNode.findData('gravity').value = '0 -1000 0'
     try : 
         sys.argv[0]
     except :
