@@ -18,15 +18,17 @@ class SpringEnv (Sofa.PythonScriptController):
         return
 
     def createGraph(self,rootNode):
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython MultiThreading')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaCUDA SofaOpenglVisual')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels showInteractionForceFields showForceFields')
-        rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
-        rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
+#        rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
+#        rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)
         rootNode.createObject('BruteForceDetection', name='N2')
-        rootNode.createObject('MinProximityIntersection', contactDistance=0.5, alarmDistance=0.5)
-        rootNode.createObject('DiscreteIntersection')
-        rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
+        rootNode.createObject('CollisionResponse')
+        rootNode.createObject('MinProximityIntersection', contactDistance=0.5, alarmDistance=0.8)
+#        rootNode.createObject('CollisionGroup')
+#        rootNode.createObject('DiscreteIntersection')
+#        rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 #        rootNode.createObject('AnimationLoopParallelScheduler', threadNumber=2)
 
         # rootNode/Floor
@@ -45,22 +47,22 @@ class SpringEnv (Sofa.PythonScriptController):
 #         # rootNode/Spring
         Spring = rootNode.createChild('Spring')
         self.Spring = Spring
-        Spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
-        Spring.createObject('CGLinearSolver', threshold='1e-18', tolerance='1e-12', name='linearSolver', iterations='20')
+        Spring.createObject('EulerImplicitSolver', rayleighStiffness='0.03', rayleighMass='1')
+        Spring.createObject('CGLinearSolver', threshold='1e-5', tolerance='1e-5', iterations='20')
 
         Spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
         Spring.createObject('MeshTopology', name='topo', src='@loader')
-        Spring.createObject('SparseGridRamificationTopology', n='4 12 3', src='@topo', nbVirtualFinerLevels='3', finestConnectivity='0')
-        Spring.createObject('MechanicalObject', name='spring', rotation='0 0 90', translation=[0, 25, 0])
-        Spring.createObject('HexahedronFEMForceField', youngModulus='3e17', poissonRatio='0.4', method='large', updateStiffnessMatrix='false')
-        Spring.createObject('UniformMass', totalMass='1.0')
+        Spring.createObject('SparseGridTopology', n='10 5 10', src='@topo')
+        Spring.createObject('MechanicalObject', name='spring', rotation='0 0 90', translation=[0, 25, 0], template='Vec3d')
+        Spring.createObject('RestShapeSpringsForceField', stiffness='5')
+        Spring.createObject('UniformMass', vertexMass='1.0')
 #        Spring.createObject('FixedConstraint', indices='93', name='FixedConstraint')
-        Spring.createObject('UncoupledConstraintCorrection')
+#       Spring.createObject('UncoupledConstraintCorrection')
 
         # rootNode/Spring/VisuSpring
         VisuSpring = Spring.createChild('VisuSpring')
-        VisuSpring.createObject('OglModel', name='visu', src='@../loader')
-        VisuSpring.createObject('BarycentricMapping', input='@../spring', output='@visu')
+        VisuSpring.createObject('OglModel', name='visu', src='@../loader', template='ExtVec3d')
+        VisuSpring.createObject('BarycentricMapping', input='@..', output='@visu')
 
         # rootNode/Spring/CollSpring
         CollSpring = Spring.createChild('CollSpring')
@@ -181,63 +183,6 @@ class SpringEnv (Sofa.PythonScriptController):
     def onKeyPressed(self, c):
         ## usage e.g.
         # print(c, 'has been pressed')
-        # pos = np.array(self.Cylinder.getObject('Cyl').position)
-        # print('pos is', pos)
-        # if c== "Q":
-        #     newPos = pos + np.array([1, 0, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     print(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "W":
-        #     newPos = pos + np.array([-1, 0, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "A":
-        #     newPos = pos + np.array([0, 1, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "D":
-        #     newPos = pos + np.array([0, -1, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "Z":
-        #     newPos = pos + np.array([0, 0, 1, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "X":
-        #     newPos = pos + np.array([0, 0, -1, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "T":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0.1, 0, 0])
-        #     print(delta_q)
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     print(newPos)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "Y":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, -0.1, 0, 0])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "G":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, 0.1, 0])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "H":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, -0.1, 0])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "V":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, 0, 0.1])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "B":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, 0, -0.1])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "E":
-        #     self.Cylinder.getObject('Cyl').velocity = '0 0 0 0 0 0'
-
-
         return 0
 
     def onMouseWheel(self, mouseX,mouseY,wheelDelta):
@@ -299,7 +244,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
 def createScene(rootNode):
     rootNode.findData('dt').value = '0.02'
-    rootNode.findData('gravity').value = '0 -100 0'
+    rootNode.findData('gravity').value = '0 -10 0'
     try : 
         sys.argv[0]
     except :

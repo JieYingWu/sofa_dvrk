@@ -56,57 +56,64 @@ class SpringEnv (Sofa.PythonScriptController):
         return 0
     
     def populateSpring(self, spring, translation, rotation):
-        index = [99]
+#        index = [99]
         spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
         spring.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='20')
-        spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
-        spring.createObject('MeshTopology', name='topo', src='@loader')
-        spring.createObject('SparseGridRamificationTopology', n='4 12 3', src='@topo', nbVirtualFinerLevels='3', finestConnectivity='0')
-        spring.createObject('MechanicalObject', name='spring', rotation=rotation, translation=translation)
-        spring.createObject('HexahedronFEMForceField', youngModulus='3e17', poissonRatio='0.4', method='large', updateStiffnessMatrix='false')
+        spring.createObject('MeshGmshLoader', name='loader', filename='meshes/steel_extension_spring.msh')
+#        spring.createObject('MeshTopology', name='topo', src='@loader')
+#        spring.createObject('EdgeSetGeometryAlgorithms')
+        spring.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='meshes/steel_extension_spring.msh')
+        spring.createObject('TetrahedronSetGeometryAlgorithms', template='CudaVec3f')
+        
+#        spring.createObject('SparseGridTopology', n='1 1 1', src='@topo')
+        spring.createObject('MechanicalObject', template='CudaVec3f', name='spring', rotation=rotation, translation=translation)
+        spring.createObject('TetrahedronFEMForceField', youngModulus='1e3', poissonRatio='0.26')
+#        spring.createObject('MeshSpringForceField', stiffness='100', damping='1')
         spring.createObject('UniformMass', totalMass=1.0, showAxisSizeFactor=100)
 #        spring.createObject('FixedConstraint', indices=index, name='FixedConstraint')
-        spring.createObject('UncoupledConstraintCorrection')
+#        spring.createObject('UncoupledConstraintCorrection')
 
         # rootNode/Spring/VisuSpring
-        VisuSpring = spring.createChild('Visuspring')
+        VisuSpring = spring.createChild('VisuSpring')
         VisuSpring.createObject('OglModel', name='visu', src='@../loader')
-        VisuSpring.createObject('BarycentricMapping', input='@../spring', output='@visu')
+        VisuSpring.createObject('IdentityMapping', input='@..', output='@visu')
 
         # rootNode/Spring/CollSpring
         CollSpring = spring.createChild('CollSpring')
+        CollSpring.createObject('MeshTopology', name='topo', src='@../loader')
         CollSpring.createObject('MechanicalObject', name='coll', src="@../loader")
         CollSpring.createObject('TTriangleModel')
         CollSpring.createObject('TLineModel')
         CollSpring.createObject('TPointModel')
-        CollSpring.createObject('BarycentricMapping', input='@..', output='@.')
+        CollSpring.createObject('IdentityMapping', input='@..', output='@.')
 
         return 0
     
     def createGraph(self,rootNode):
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython MultiThreading SofaOpenglVisual')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaOpenglVisual SofaCUDA')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels showInteractionForceFields showForceFields')
-        rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
-        rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
+#        rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
+#        rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)
-        rootNode.createObject('BruteForceDetection', name='N2')
-        rootNode.createObject('MinProximityIntersection', contactDistance=0.1, alarmDistance=0.5)
+        rootNode.createObject('BruteForceDetection')
+        rootNode.createObject('MinProximityIntersection', contactDistance=0.5, alarmDistance=0.8)
         rootNode.createObject('DiscreteIntersection')
-        rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
+        rootNode.createObject('DefaultContactManager')
         # rootNode.createObject('AnimationLoopParallelScheduler', threadNumber=2)
+
 
         # rootNode/Floor
         scale=[10, 1, 10]
 #        translation = [100, 0, 100]
-        Floor = rootNode.createChild('Floor')
-        self.Floor = Floor
-        Floor.createObject('MeshObjLoader', name='loader', filename='mesh/floorFlat.obj')
-        Floor.createObject('MeshTopology', src='@loader')
-        Floor.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale)
-        Floor.createObject('TTriangleModel', simulated=0, moving=0)
-        Floor.createObject('TLineModel', simulated=0, moving=0)
-        Floor.createObject('TPointModel', simulated=0, moving=0)
-        Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale)
+        # Floor = rootNode.createChild('Floor')
+        # self.Floor = Floor
+        # Floor.createObject('MeshObjLoader', name='loader', filename='mesh/floorFlat.obj')
+        # Floor.createObject('MeshTopology', src='@loader')
+        # Floor.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale)
+        # Floor.createObject('TTriangleModel', simulated=0, moving=0)
+        # Floor.createObject('TLineModel', simulated=0, moving=0)
+        # Floor.createObject('TPointModel', simulated=0, moving=0)
+        # Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale)
 
         # rootNode/Tabletop
         tableWidth = 95.7
@@ -148,10 +155,10 @@ class SpringEnv (Sofa.PythonScriptController):
         self.Support3 = Support3
 
         # rootNode/Spring0
-        offset = tableWidth/2+4
+        offset = tableWidth/2+3.5
         springAngle = 32
         springLength = 38.1
-        springHeight = tableHeight - 1  # + springLength * math.sin(springAngle*math.pi/180) / 2
+        springHeight = tableHeight - 0.9  # + springLength * math.sin(springAngle*math.pi/180) / 2
         translation = [-offset, springHeight, 0]
         rotation = [0, 0, -springAngle]
         Spring0 = rootNode.createChild('Spring0')
@@ -161,7 +168,7 @@ class SpringEnv (Sofa.PythonScriptController):
         # rootNode/Spring1
         translation=[0, springHeight, -offset]
         # Euler angle in XYZ form
-        rotation = [-90, 90-springAngle, 90]
+        rotation = [-90, 270-springAngle, 90]
         Spring1 = rootNode.createChild('Spring1')
         self.populateSpring(Spring1, translation, rotation)
         self.Spring1 = Spring1
@@ -175,7 +182,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
         # rootNode/Spring3
         translation=[0, springHeight, offset]
-        rotation = [90, -(90-springAngle), 90]
+        rotation = [90, 90+springAngle, 90]
         Spring3 = rootNode.createChild('Spring3')
         self.populateSpring(Spring3, translation, rotation)
         self.Spring3 = Spring3
@@ -326,7 +333,7 @@ class SpringEnv (Sofa.PythonScriptController):
         return 0
 
 def createScene(rootNode):
-    rootNode.findData('dt').value = '0.02'
+    rootNode.findData('dt').value = '0.001'
     rootNode.findData('gravity').value = '0 -1000 0'
     try : 
         sys.argv[0]
