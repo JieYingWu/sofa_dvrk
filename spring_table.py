@@ -54,39 +54,68 @@ class SpringEnv (Sofa.PythonScriptController):
         CollNode.createObject('RigidMapping')
 
         return 0
+
+    def populateVec(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
+        node.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        node.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='15')
+        if (filename[-4:] == '.obj'):
+            node.createObject('MeshObjLoader', name='loader', filename=filename)
+        elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
+            node.createObject('MeshSTLLoader', name='loader', filename=filename)
+        node.createObject('MeshTopology', src='@loader')
+        node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
+        node.createObject('TriangularFEMForceField', youngModulus=1e12, poissonRatio=0)
+        node.createObject('UniformMass', totalMass=mass)
+        node.createObject('UncoupledConstraintCorrection')
+
+        # Visual Node
+        VisuNode = node.createChild('Visu_Cyl')
+        VisuNode.createObject('OglModel', name='visual', src='@../loader', color=color, scale3d=scale, translation=translation, rotation=rotation)
+        VisuNode.createObject('IdentityMapping', input='@../mecha', output='@visual')
+
+        # Collision Node
+        CollNode = node.createChild('Coll_Cyl')
+        CollNode.createObject('MeshTopology', src="@../loader")
+        CollNode.createObject('MechanicalObject', src='@../loader', scale3d=scale, translation=translation, rotation=rotation)
+        CollNode.createObject('TPointModel')
+        CollNode.createObject('TLineModel')
+        CollNode.createObject('TTriangleModel')
+        CollNode.createObject('IdentityMapping', input='@../mecha', output='@.')
+
+        return 0
     
-    def populateSpring(self, spring, translation, rotation):
-#        index = [99]
+    def populateSpring(self, spring, translation, rotation, color='gray'):
+        index = [29575, 29040, 29597]
         spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
         spring.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='20')
-        spring.createObject('MeshGmshLoader', name='loader', filename='meshes/steel_extension_spring.msh')
-#        spring.createObject('MeshTopology', name='topo', src='@loader')
+        spring.createObject('MeshObjLoader', name='loader', filename='meshes/steel_extension_spring.obj')
+        spring.createObject('MeshTopology', name='topo', src='@loader')
 #        spring.createObject('EdgeSetGeometryAlgorithms')
-        spring.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='meshes/steel_extension_spring.msh')
-        spring.createObject('TetrahedronSetGeometryAlgorithms', template='CudaVec3f')
+#        spring.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='meshes/steel_extension_spring.msh')
+#        spring.createObject('TetrahedronSetGeometryAlgorithms', template='CudaVec3f')
         
-#        spring.createObject('SparseGridTopology', n='1 1 1', src='@topo')
-        spring.createObject('MechanicalObject', template='CudaVec3f', name='spring', rotation=rotation, translation=translation)
+        spring.createObject('SparseGridTopology', n='10 10 10', src='@topo')
+        spring.createObject('MechanicalObject', template='Vec3d', name='spring', rotation=rotation, translation=translation)
         spring.createObject('TetrahedronFEMForceField', youngModulus='1e3', poissonRatio='0.26')
-#        spring.createObject('MeshSpringForceField', stiffness='100', damping='1')
+#        spring.createObject('MeshSpringForceField', stiffness='10000', damping='1')
         spring.createObject('UniformMass', totalMass=1.0, showAxisSizeFactor=100)
 #        spring.createObject('FixedConstraint', indices=index, name='FixedConstraint')
 #        spring.createObject('UncoupledConstraintCorrection')
 
         # rootNode/Spring/VisuSpring
         VisuSpring = spring.createChild('VisuSpring')
-        VisuSpring.createObject('OglModel', name='visu', src='@../loader')
-        VisuSpring.createObject('IdentityMapping', input='@..', output='@visu')
+        VisuSpring.createObject('OglModel', name='visu', src='@../loader', color=color)
+        VisuSpring.createObject('BarycentricMapping', input='@..', output='@visu')
 
         # rootNode/Spring/CollSpring
         CollSpring = spring.createChild('CollSpring')
         CollSpring.createObject('MeshTopology', name='topo', src='@../loader')
-        CollSpring.createObject('MechanicalObject', name='coll', src="@../loader")
+        CollSpring.createObject('MechanicalObject', name='coll', src='@../loader')
         CollSpring.createObject('TTriangleModel')
         CollSpring.createObject('TLineModel')
         CollSpring.createObject('TPointModel')
-        CollSpring.createObject('IdentityMapping', input='@..', output='@.')
-
+        CollSpring.createObject('BarycentricMapping', input='@..', output='@.')
+        
         return 0
     
     def createGraph(self,rootNode):
@@ -103,7 +132,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
 
         # rootNode/Floor
-        scale=[10, 1, 10]
+#        scale=[10, 1, 10]
 #        translation = [100, 0, 100]
         # Floor = rootNode.createChild('Floor')
         # self.Floor = Floor
@@ -115,44 +144,44 @@ class SpringEnv (Sofa.PythonScriptController):
         # Floor.createObject('TPointModel', simulated=0, moving=0)
         # Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale)
 
-        # rootNode/Tabletop
         tableWidth = 95.7
         tableHeight = 72
-        scale = [1, 1, 1]
-        translation = [0, tableHeight, 0]
-        Tabletop = rootNode.createChild('Tabletop')
-        self.populateRigid(Tabletop, 'meshes/lego_platform.STL', translation=translation, scale=scale, mass=100.0, color='green')
-        self.Tabletop = Tabletop
-
+        
         # rootNode/Support0
         supportHeight = 95.7
         offset = tableWidth/2+16
         height = supportHeight/2
         translation = [-offset, height, 0]
         Support0 = rootNode.createChild('Support0')
-        self.populateNonMoving(Support0, 'meshes/lego_support.STL', translation=translation, scale=scale, color='blue')
+        self.populateNonMoving(Support0, 'meshes/lego_support.STL', translation=translation, color='blue')
         self.Support0 = Support0
 
         # rootNode/Support1
         translation = [0, height, -offset]
         rotation = [0, 90, 0]
         Support1 = rootNode.createChild('Support1')
-        self.populateNonMoving(Support1, 'meshes/lego_support.STL', translation=translation, rotation=rotation, scale=scale, color='blue')
+        self.populateNonMoving(Support1, 'meshes/lego_support.STL', translation=translation, rotation=rotation, color='blue')
         self.Support1 = Support1
 
         # rootNode/Support2
         translation = [offset, height, 0]
         rotation = [0, 180, 0]
         Support2 = rootNode.createChild('Support2')
-        self.populateNonMoving(Support2, 'meshes/lego_support.STL', translation=translation, rotation=rotation, scale=scale, color='blue')
+        self.populateNonMoving(Support2, 'meshes/lego_support.STL', translation=translation, rotation=rotation, color='blue')
         self.Support2 = Support2
 
         # rootNode/Support3
         translation = [0, height, offset]
         rotation = [0, 270, 0]
         Support3 = rootNode.createChild('Support3')
-        self.populateNonMoving(Support3, 'meshes/lego_support.STL', translation=translation, rotation=rotation, scale=scale, color='blue')
+        self.populateNonMoving(Support3, 'meshes/lego_support.STL', translation=translation, rotation=rotation, color='blue')
         self.Support3 = Support3
+
+        # rootNode/Tabletop
+        translation = [0, tableHeight, 0]
+        Tabletop = rootNode.createChild('Tabletop')
+        self.populateVec(Tabletop, 'meshes/lego_platform.STL', translation=translation, mass=100.0, color='green')
+        self.Tabletop = Tabletop
 
         # rootNode/Spring0
         offset = tableWidth/2+3.5
@@ -170,22 +199,27 @@ class SpringEnv (Sofa.PythonScriptController):
         # Euler angle in XYZ form
         rotation = [-90, 270-springAngle, 90]
         Spring1 = rootNode.createChild('Spring1')
-        self.populateSpring(Spring1, translation, rotation)
+        self.populateSpring(Spring1, translation, rotation, color='red')
         self.Spring1 = Spring1
 
         # rootNode/Spring2
         translation=[offset, springHeight, 0]
-        rotation = [0, 0, springAngle]
+        rotation = [0, 0, 180+springAngle]
         Spring2 = rootNode.createChild('Spring2')
-        self.populateSpring(Spring2, translation, rotation)
+        self.populateSpring(Spring2, translation, rotation, color='yellow')
         self.Spring2 = Spring2
 
         # rootNode/Spring3
         translation=[0, springHeight, offset]
         rotation = [90, 90+springAngle, 90]
         Spring3 = rootNode.createChild('Spring3')
-        self.populateSpring(Spring3, translation, rotation)
+        self.populateSpring(Spring3, translation, rotation, color='blue')
         self.Spring3 = Spring3
+
+#        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring0', twoWay='true', indices1='159', indices2='292', constraintFactor='1')
+#        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring1', twoWay='true', indices1='212', indices2='292', constraintFactor='1')
+#        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring2', twoWay='true', indices1='246', indices2='292', constraintFactor='1')
+#        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring3', twoWay='true', indices1='90', indices2='292', constraintFactor='1')
         
         # rootNode/Cylinder
         # scale = [0.8, 0.8, 0.8]

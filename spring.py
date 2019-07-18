@@ -52,21 +52,22 @@ class SpringEnv (Sofa.PythonScriptController):
 
         Spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
         Spring.createObject('MeshTopology', name='topo', src='@loader')
-        Spring.createObject('SparseGridTopology', n='10 5 10', src='@topo')
+#        Spring.createObject('SparseGridTopology', n='10 5 10', src='@topo')
         Spring.createObject('MechanicalObject', name='spring', rotation='0 0 90', translation=[0, 25, 0], template='Vec3d')
-        Spring.createObject('RestShapeSpringsForceField', stiffness='5')
+        Spring.createObject('TriangularFEMForceField', youngModulus='1e3', poissonRatio='0.26')
+#        Spring.createObject('MeshShapeSpringsForceField', stiffness='5')
         Spring.createObject('UniformMass', vertexMass='1.0')
 #        Spring.createObject('FixedConstraint', indices='93', name='FixedConstraint')
 #       Spring.createObject('UncoupledConstraintCorrection')
 
         # rootNode/Spring/VisuSpring
         VisuSpring = Spring.createChild('VisuSpring')
-        VisuSpring.createObject('OglModel', name='visu', src='@../loader', template='ExtVec3d')
+        VisuSpring.createObject('OglModel', name='visu', src='@../loader', template='ExtVec3d', rotation='0 0 90', translation=[0, 25, 0])
         VisuSpring.createObject('BarycentricMapping', input='@..', output='@visu')
 
         # rootNode/Spring/CollSpring
         CollSpring = Spring.createChild('CollSpring')
-        CollSpring.createObject('MechanicalObject', name='coll', src="@../loader")
+        CollSpring.createObject('MechanicalObject', name='coll', src="@../loader", rotation='0 0 90', translation=[0, 25, 0])
         CollSpring.createObject('TTriangleModel')
         CollSpring.createObject('TLineModel')
         CollSpring.createObject('TPointModel')
