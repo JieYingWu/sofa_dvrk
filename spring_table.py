@@ -62,25 +62,25 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('MeshObjLoader', name='loader', filename=filename)
         elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
-        node.createObject('MeshTopology', src='@loader')
+        node.createObject('MeshTopology', name='topo', src='@loader')
+        node.createObject('SparseGridTopology', n='10 10 10', src='@topo') 
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
         node.createObject('TriangularFEMForceField', youngModulus=1e12, poissonRatio=0)
         node.createObject('UniformMass', totalMass=mass)
-        node.createObject('UncoupledConstraintCorrection')
 
         # Visual Node
         VisuNode = node.createChild('Visu_Cyl')
-        VisuNode.createObject('OglModel', name='visual', src='@../loader', color=color, scale3d=scale, translation=translation, rotation=rotation)
-        VisuNode.createObject('IdentityMapping', input='@../mecha', output='@visual')
+        VisuNode.createObject('OglModel', name='visual', src='@../loader', color=color, scale3d=scale)
+        VisuNode.createObject('BarycentricMapping', input='@../mecha', output='@visual')
 
         # Collision Node
         CollNode = node.createChild('Coll_Cyl')
         CollNode.createObject('MeshTopology', src="@../loader")
-        CollNode.createObject('MechanicalObject', src='@../loader', scale3d=scale, translation=translation, rotation=rotation)
+        CollNode.createObject('MechanicalObject', src='@../loader', scale3d=scale)
         CollNode.createObject('TPointModel')
         CollNode.createObject('TLineModel')
         CollNode.createObject('TTriangleModel')
-        CollNode.createObject('IdentityMapping', input='@../mecha', output='@.')
+        CollNode.createObject('BarycentricMapping', input='@../mecha', output='@.')
 
         return 0
     
@@ -95,22 +95,21 @@ class SpringEnv (Sofa.PythonScriptController):
 #        spring.createObject('TetrahedronSetGeometryAlgorithms', template='CudaVec3f')
         
         spring.createObject('SparseGridTopology', n='10 10 10', src='@topo')
-        spring.createObject('MechanicalObject', template='Vec3d', name='spring', rotation=rotation, translation=translation)
+        spring.createObject('MechanicalObject', template='CudaVec3f', name='spring', rotation=rotation, translation=translation)
         spring.createObject('TetrahedronFEMForceField', youngModulus='1e3', poissonRatio='0.26')
 #        spring.createObject('MeshSpringForceField', stiffness='10000', damping='1')
-        spring.createObject('UniformMass', totalMass=1.0, showAxisSizeFactor=100)
+        spring.createObject('UniformMass', totalMass=1.0)
 #        spring.createObject('FixedConstraint', indices=index, name='FixedConstraint')
-#        spring.createObject('UncoupledConstraintCorrection')
 
         # rootNode/Spring/VisuSpring
         VisuSpring = spring.createChild('VisuSpring')
-        VisuSpring.createObject('OglModel', name='visu', src='@../loader', color=color)
+        VisuSpring.createObject('OglModel', name='visu', src='@../loader', color=color, template='ExtVec3d')
         VisuSpring.createObject('BarycentricMapping', input='@..', output='@visu')
 
         # rootNode/Spring/CollSpring
         CollSpring = spring.createChild('CollSpring')
         CollSpring.createObject('MeshTopology', name='topo', src='@../loader')
-        CollSpring.createObject('MechanicalObject', name='coll', src='@../loader')
+        CollSpring.createObject('MechanicalObject', name='coll', src='@../loader', template='Vec3d')
         CollSpring.createObject('TTriangleModel')
         CollSpring.createObject('TLineModel')
         CollSpring.createObject('TPointModel')
@@ -180,7 +179,7 @@ class SpringEnv (Sofa.PythonScriptController):
         # rootNode/Tabletop
         translation = [0, tableHeight, 0]
         Tabletop = rootNode.createChild('Tabletop')
-        self.populateVec(Tabletop, 'meshes/lego_platform.STL', translation=translation, mass=100.0, color='green')
+        self.populateVec(Tabletop, 'meshes/lego_platform.STL', translation=translation, mass=1000.0, color='green')
         self.Tabletop = Tabletop
 
         # rootNode/Spring0
@@ -222,11 +221,11 @@ class SpringEnv (Sofa.PythonScriptController):
 #        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring3', twoWay='true', indices1='90', indices2='292', constraintFactor='1')
         
         # rootNode/Cylinder
-        # scale = [0.8, 0.8, 0.8]
-        # translation = [22, 70, -48]
-        # Cylinder = rootNode.createChild('Cylinder')
-        # self.populateRigid(Cylinder, 'meshes/cylinder_rot.obj', translation=translation, scale=scale, mass=1e5, color='blue')
-        # self.Cylinder = Cylinder
+        scale = [0.5, 0.5, 0.5]
+        translation = [12, 90, -8]
+        Cylinder = rootNode.createChild('Cylinder')
+        self.populateVec(Cylinder, 'meshes/cylinder_rot.obj', translation=translation, scale=scale, mass=1e5, color='purple')
+        self.Cylinder = Cylinder
         
         return 0
 
@@ -250,63 +249,6 @@ class SpringEnv (Sofa.PythonScriptController):
     def onKeyPressed(self, c):
         ## usage e.g.
         # print(c, 'has been pressed')
-        # pos = np.array(self.Cylinder.getObject('Cyl').position)
-        # print('pos is', pos)
-        # if c== "Q":
-        #     newPos = pos + np.array([1, 0, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     print(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "W":
-        #     newPos = pos + np.array([-1, 0, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "A":
-        #     newPos = pos + np.array([0, 1, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "D":
-        #     newPos = pos + np.array([0, -1, 0, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "Z":
-        #     newPos = pos + np.array([0, 0, 1, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "X":
-        #     newPos = pos + np.array([0, 0, -1, 0, 0, 0, 0])
-        #     newPos = geo.arrToStr(newPos)
-        #     self.Cylinder.getObject('Cyl').position = newPos
-        # if c == "T":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0.1, 0, 0])
-        #     print(delta_q)
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     print(newPos)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "Y":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, -0.1, 0, 0])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "G":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, 0.1, 0])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "H":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, -0.1, 0])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "V":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, 0, 0.1])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "B":
-        #     delta_q = geo.eulerToQuaternion([0, 0, 0, 0, 0, -0.1])
-        #     newPos = geo.q_mult(pos[0], delta_q)
-        #     self.Cylinder.getObject('Cyl').position = geo.arrToStr(newPos)
-        # if c == "E":
-        #     self.Cylinder.getObject('Cyl').velocity = '0 0 0 0 0 0'
-
-
         return 0
 
     def onMouseWheel(self, mouseX,mouseY,wheelDelta):
@@ -322,6 +264,7 @@ class SpringEnv (Sofa.PythonScriptController):
     def cleanup(self):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         # self.conn.close()
+        self.f.close()
         return 0
 
     def onGUIEvent(self, strControlID,valueName,strValue):
@@ -349,6 +292,8 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def bwdInitGraph(self, node):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        self.f = open("measurements/position.txt","w+")
+        
         return 0
 
     def onScriptEvent(self, senderNode, eventName,data):
@@ -364,10 +309,13 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onBeginAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        pos = np.array(self.Tabletop.getObject('mecha').position)
+        self.f.write(str(pos[31]) + str(pos[30]) + str(pos[32]) + str(pos[34]) + '\n')
+        
         return 0
 
 def createScene(rootNode):
-    rootNode.findData('dt').value = '0.001'
+    rootNode.findData('dt').value = '0.01'
     rootNode.findData('gravity').value = '0 -1000 0'
     try : 
         sys.argv[0]

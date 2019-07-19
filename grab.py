@@ -1,23 +1,3 @@
-"""
-baseModelPython
-is based on the scene 
-
-but it uses the SofaPython plugin. 
-Further informations on the usage of the plugin can be found in 
-sofa/applications/plugins/SofaPython/doc/SofaPython.pdf
-To launch the scene, type 
-runSofa .py --argv 123
-The sofa python plugin might have to be added in the sofa plugin manager, 
-i.e. add the sofa python plugin in runSofa->Edit->PluginManager.
-The arguments given after --argv can be used by accessing self.commandLineArguments, e.g. combined with ast.literal_eval to convert a string to a number.
-
-The current file has been written by the python script
-'{' is not recognized as an internal or external command,
-operable program or batch file.\scn2python.py
-Author of '{' is not recognized as an internal or external command,
-operable program or batch file.\scn2python.py: Christoph PAULUS, christoph.paulus@inria.fr
-"""
-
 import sys
 import Sofa
 
