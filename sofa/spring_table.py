@@ -30,7 +30,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def populateRigid(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
         node.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
-        node.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='15')
+        node.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
         if (filename[-4:] == '.obj'):
             node.createObject('MeshObjLoader', name='loader', filename=filename)
         elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
@@ -55,33 +55,64 @@ class SpringEnv (Sofa.PythonScriptController):
 
         return 0
 
+    def populateVec(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
+        node.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        node.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
+        if (filename[-4:] == '.obj'):
+            node.createObject('MeshObjLoader', name='loader', filename=filename)
+        elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
+            node.createObject('MeshSTLLoader', name='loader', filename=filename)
+        node.createObject('MeshTopology', src='@loader')
+        node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
+        node.createObject('TriangleFEMForceField', youngModulus='3e9', poissonRatio='0.26', computeGlobalMatrix="false", method="large")
+        node.createObject('UniformMass', totalMass=mass)
+#        node.createObject('UncoupledConstraintCorrection')
+
+        # Visual Node
+        VisuNode = node.createChild('Visu_Cyl')
+        VisuNode.createObject('OglModel', name='visual', src='@../loader', color=color, scale3d=scale)
+        VisuNode.createObject('IdentityMapping', input='@..', output='@visual')
+
+        # Collision Node
+        CollNode = node.createChild('Coll_Cyl')
+        CollNode.createObject('MeshTopology', src="@../loader")
+        CollNode.createObject('MechanicalObject', src='@../loader', scale3d=scale)
+        CollNode.createObject('TPointModel')
+        CollNode.createObject('TLineModel')
+        CollNode.createObject('TTriangleModel')
+        CollNode.createObject('IdentityMapping')
+
+        return 0
+    
     
     def populateSpring(self, spring, translation, rotation, color='gray'):
         index = [29575, 29040, 29597]
         spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
         spring.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='20')
-        spring.createObject('MeshGmshLoader', name='loader', filename='meshes/steel_extension_spring.msh')
-#        spring.createObject('MeshTopology', name='topo', src='@loader')
-        spring.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='meshes/steel_extension_spring.msh')
-        spring.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+        spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
+#        spring.createObject('MeshGmshLoader', name='loader', filename='meshes/steel_extension_spring.msh')
+        spring.createObject('MeshTopology', name='topo', src='@loader')
+#        spring.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='meshes/steel_extension_spring.msh')
+#        spring.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
         
-#        spring.createObject('SparseGridTopology', n='30 30 30', src='@topo')
+        spring.createObject('SparseGridTopology', n='20 20 20', src='@topo')
         spring.createObject('MechanicalObject', template='Vec3d', name='spring', rotation=rotation, translation=translation)
-        spring.createObject('TetrahedronFEMForceField', youngModulus='1e5', poissonRatio='0.26', computeGlobalMatrix="false", method="large")
-#        spring.createObject('MeshSpringForceField', stiffness='1e9', damping='1')
+#        spring.createObject('TriangularFEMForceField', youngModulus='1e4', poissonRatio='0.26')
+        spring.createObject('TetrahedronFEMForceField', youngModulus='7e2', poissonRatio='0.26', computeGlobalMatrix="false", method="large")
+#        spring.createObject('MeshSpringForceField', stiffness='1e3', damping='1')
         spring.createObject('UniformMass', totalMass=1.0)
 #        spring.createObject('FixedConstraint', indices=index, name='FixedConstraint')
 
         # rootNode/Spring/VisuSpring
         VisuSpring = spring.createChild('VisuSpring')
         VisuSpring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
-        VisuSpring.createObject('OglModel', name='visu', src='@loader', color=color, template='ExtVec3d', rotation=rotation, translation=translation)
+        VisuSpring.createObject('OglModel', name='visu', src='@loader', color=color, template='ExtVec3d')#, rotation=rotation, translation=translation)
         VisuSpring.createObject('BarycentricMapping', input='@../spring', output='@visu')
 
         # rootNode/Spring/CollSpring
         CollSpring = spring.createChild('CollSpring')
         CollSpring.createObject('MeshTopology', name='topo', src='@../loader')
-        CollSpring.createObject('MechanicalObject', name='coll', src='@../loader', template='Vec3d', rotation=rotation, translation=translation)
+        CollSpring.createObject('MechanicalObject', name='coll', src='@../loader', template='Vec3d')#, rotation=rotation, translation=translation)
         CollSpring.createObject('TTriangleModel')
         CollSpring.createObject('TLineModel')
         CollSpring.createObject('TPointModel')
@@ -134,7 +165,7 @@ class SpringEnv (Sofa.PythonScriptController):
         # rootNode/Tabletop
         translation = [0, tableHeight, 0]
         Tabletop = rootNode.createChild('Tabletop')
-        self.populateRigid(Tabletop, 'meshes/lego_platform.STL', translation=translation, mass=1000.0, color='green')
+        self.populateVec(Tabletop, 'meshes/lego_platform.STL', translation=translation, mass=7300.6, color='green')
         self.Tabletop = Tabletop
 
         # rootNode/Spring0
