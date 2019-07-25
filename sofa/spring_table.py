@@ -12,6 +12,7 @@ class SpringEnv (Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))
         self.createGraph(node)
+        self.last_pos = np.array(self.Tabletop.getObject('mecha').position)
 
 
     def output(self):
@@ -165,7 +166,7 @@ class SpringEnv (Sofa.PythonScriptController):
         # rootNode/Tabletop
         translation = [0, tableHeight, 0]
         Tabletop = rootNode.createChild('Tabletop')
-        self.populateVec(Tabletop, 'meshes/lego_platform.STL', translation=translation, mass=7300.6, color='green')
+        self.populateRigid(Tabletop, 'meshes/lego_platform.STL', translation=translation, mass=73.6, color='green')
         self.Tabletop = Tabletop
 
         # rootNode/Spring0
@@ -260,6 +261,13 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        pos = np.array(self.Tabletop.getObject('mecha').position)
+        self.f.write(str(pos) + '\n')
+        self.Tabletop.getObject('mecha').position = geo.arrToStr(self.last_pos)
+        print('pos is ' + str(pos))
+        print('last_pos is ' + str(self.last_pos[0]))
+        self.last_pos = pos
+        
         return 0
 
     def onLoaded(self, node):
@@ -295,9 +303,6 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onBeginAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-#        pos = np.array(self.Tabletop.getObject('mecha').position)
-#        self.f.write(str(pos[31]) + str(pos[30]) + str(pos[32]) + str(pos[34]) + '\n')
-        
         return 0
 
 def createScene(rootNode):
