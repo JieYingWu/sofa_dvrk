@@ -122,7 +122,7 @@ class SpringEnv (Sofa.PythonScriptController):
         return 0
     
     def createGraph(self,rootNode):
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaOpenglVisual SofaCUDA')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaOpenglVisual')# SofaCUDA')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels showInteractionForceFields showForceFields')
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)
         rootNode.createObject('BruteForceDetection')
