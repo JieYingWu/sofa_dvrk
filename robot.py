@@ -3,24 +3,27 @@ import Sofa
 import numpy as np
 import cisstRobotPython
 import geometry_util as geo
-from urdf_parser_py import urdf  # noqa
-import urdf_parser_py.xml_reflection as xmlr
-from pykdl_utils.kdl_kinematics import KDLKinematics
 
 class RobotEnv(Sofa.PythonScriptController):
-    axis_scale = 0.2
+    robot = cisstRobotPython.robManipulator()
+    joints = np.zeros(6)
+    step = 0.02
+    axis_scale=100
     
     def __init__(self, node, commandLineArguments):
         self.count = 0
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : " + str(commandLineArguments))
+
+        self.joints = np.array([0.6, 0.2, 0.75, 3.14, 0.0, 0.0])
+        self.robot.LoadRobot('/home/jieying/catkin_ws/src/cisst-saw/sawIntuitiveResearchKit/share/deprecated/dvpsm.rob')
         self.createGraph(node)
 
 
     def createGraph(self, rootNode):
 
         rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython')
-        rootNode.createObject('VisualStyle', displayFlags='showVisual showBehaviorModels')#  showForceFields showCollision showMapping')
+        rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')#  showForceFields showCollision showMapping')
         rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst='0')
         rootNode.createObject('LCPConstraintSolver', maxIt='1000', tolerance='1e-6', mu='0.9')
         rootNode.createObject('DefaultPipeline', depth='5', verbose='0', draw='0')
@@ -32,58 +35,54 @@ class RobotEnv(Sofa.PythonScriptController):
         rootNode.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
 
         
-#        f = open('meshes/psm1.urdf')
-#        robot = urdf.URDF.from_xml_string(f.read())
-#        f.close()
-#        print(robot.link_map.keys())
-#        print(robot.get_chain('world', 'PSM1_tool_tip_link', links=False))
-#        kin = KDLKinematics(robot, 'world', 'PSM1_tool_tip_link')
-        #q = kin.random_joint_angles()
-
-        r = cisstRobotPython.robManipulator()
-        r.LoadRobot('/home/jieying/catkin_ws/src/cisst-saw/sawIntuitiveResearchKit/share/deprecated/dvpsm.rob')
-#        q = np.array([0.707, 0.707, 0.707, 0.707, 0.707, 0.707])
-        q = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        # rootNode/Link0
+        pose = self.robot.ForwardKinematics(self.joints, N=0)
+        link0_pos = geo.matToPos(pose)
         
-        # rootNode/BaseLink
-        pose = r.ForwardKinematics(q, N=0)
-        base_pos = geo.matToPos(pose)
-
-        BaseLink = rootNode.createChild('BaseLink')
-        self.BaseLink = BaseLink
-        BaseLink.createObject('MeshSTLLoader', name='loader', filename='meshes/psm/psm_base.stl')
-        BaseLink.createObject('MechanicalObject', name='mecha', template='Rigid', translation='0 0 0', rotation='0 0 0 0', position='0 0 0 0 0 0 1')#geo.posToStr('0.039 -0.40788 -0.07879 -90.0 0.0 0.0'))
-        BaseLink.createObject('UniformMass', totalMass='1', template='Rigid', showAxisSizeFactor=str(self.axis_scale))
-
-        # Visual Node
-        VisuBase = BaseLink.createChild('VisuBase')
-        VisuBase.createObject('OglModel', name='visual', src='@../loader')#,
-                              #scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        VisuBase.createObject('RigidMapping', input='@../mecha', output='@visual')
-        
-        # # rootNode/Link1
-        pose = r.ForwardKinematics(q, N=1)
-        link1_pos = geo.matToTrans(pose)
-        link1_rot = geo.matToRot(pose)
+        Link0 = rootNode.createChild('Link0')
+        self.Link0 = Link0
+        Link0.createObject('MechanicalObject', name='mecha', template='Rigid3d', position=link0_pos)
+        Link0.createObject('UniformMass', totalMass='1', showAxisSizeFactor=str(self.axis_scale))
+        # rootNode/Link1
+        pose = self.robot.ForwardKinematics(self.joints, N=1)
+        link1_pos = geo.matToPos(pose)
         
         Link1 = rootNode.createChild('Link1')
         self.Link1 = Link1
-        Link1.createObject('MeshSTLLoader', name='loader', filename='meshes/psm/outer_yaw.stl')
-        Link1.createObject('MechanicalObject', name='mecha', template='Rigid', translation=link1_pos, rotation=link1_rot, position=geo.posToStr('0.0125 -0.08 0.2965 0.0 -90.0 -90.0'))
-        Link1.createObject('UniformMass', totalMass='1', template='Rigid', showAxisSizeFactor=str(self.axis_scale))
-
-        # Visual Node
-        VisuLink1 = Link1.createChild('VisuLink1')
-        VisuLink1.createObject('OglModel', name='visual', src='@../loader')#,
-                              #scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        VisuLink1.createObject('RigidMapping', input='@../mecha', output='@visual')
-
+        Link1.createObject('MechanicalObject', name='mecha', template='Rigid3d', position=link1_pos)
+        Link1.createObject('UniformMass', totalMass='1', showAxisSizeFactor=str(self.axis_scale))
+        # rootNode/Link2
+        pose = self.robot.ForwardKinematics(self.joints, N=2)
+        link2_pos = geo.matToPos(pose)
         
+        Link2 = rootNode.createChild('Link2')
+        self.Link2 = Link2
+        Link2.createObject('MechanicalObject', name='mecha', template='Rigid3d', position=link2_pos)
+        Link2.createObject('UniformMass', totalMass='1', showAxisSizeFactor=str(self.axis_scale))
+        # rootNode/Link3
+        pose = self.robot.ForwardKinematics(self.joints, N=3)
+        link3_pos = geo.matToPos(pose)
         
-        # print(link1_pos)
-        # print(link2_pos)
-        # print(tool_pos)
-        # print(tip_pos)
+        Link3 = rootNode.createChild('Link3')
+        self.Link3 = Link3
+        Link3.createObject('MechanicalObject', name='mecha', template='Rigid3d', position=link3_pos)
+        Link3.createObject('UniformMass', totalMass='1', showAxisSizeFactor=str(self.axis_scale))
+        # rootNode/Link4
+        pose = self.robot.ForwardKinematics(self.joints, N=4)
+        link4_pos = geo.matToPos(pose)
+        
+        Link4 = rootNode.createChild('Link4')
+        self.Link4 = Link4
+        Link4.createObject('MechanicalObject', name='mecha', template='Rigid3d', position=link4_pos)
+        Link4.createObject('UniformMass', totalMass='1', showAxisSizeFactor=str(self.axis_scale))
+        # rootNode/Link5
+        pose = self.robot.ForwardKinematics(self.joints, N=5)
+        link5_pos = geo.matToPos(pose)
+        
+        Link5 = rootNode.createChild('Link5')
+        self.Link5 = Link5
+        Link5.createObject('MechanicalObject', name='mecha', template='Rigid3d', position=link5_pos)
+        Link5.createObject('UniformMass', totalMass='1', showAxisSizeFactor=str(self.axis_scale))
         return 0
 
     def onMouseButtonLeft(self, mouseX, mouseY, isPressed):
@@ -101,8 +100,57 @@ class RobotEnv(Sofa.PythonScriptController):
     def initGraph(self, node):
         return 0
 
+    def updateRobot(self):
+        l0Pos = self.robot.ForwardKinematics(self.joints, N=0)
+        l0Pos = geo.matToPos(l0Pos)
+        l1Pos = self.robot.ForwardKinematics(self.joints, N=1)
+        l1Pos = geo.matToPos(l1Pos)
+        l2Pos = self.robot.ForwardKinematics(self.joints, N=2)
+        l2Pos = geo.matToPos(l2Pos)
+        l3Pos = self.robot.ForwardKinematics(self.joints, N=3)
+        l3Pos = geo.matToPos(l3Pos)
+        l4Pos = self.robot.ForwardKinematics(self.joints, N=4)
+        l4Pos = geo.matToPos(l4Pos)
+        l5Pos = self.robot.ForwardKinematics(self.joints, N=5)
+        l5Pos = geo.matToPos(l5Pos)
+        
+        self.Link0.getObject('mecha').position = l0Pos
+        self.Link1.getObject('mecha').position = l1Pos
+        self.Link2.getObject('mecha').position = l2Pos
+        self.Link3.getObject('mecha').position = l3Pos
+        self.Link4.getObject('mecha').position = l4Pos
+        self.Link5.getObject('mecha').position = l5Pos
+        
+        
     # Note: Hold control when key is pressed
     def onKeyPressed(self, c):
+        # usage e.g.
+        if c == "Q":
+            self.joints[0] += self.step
+        if c == "W":
+            self.joints[0] -= self.step
+        if c == "A":
+            self.joints[1] += self.step
+        if c == "D":
+            self.joints[1] -= self.step
+        if c == "Z":
+            self.joints[2] += self.step
+        if c == "X":
+            self.joints[2] -= self.step
+        if c == "T":
+            self.joints[3] += self.step
+        if c == "Y":
+            self.joints[3] -= self.step
+        if c == "G":
+            self.joints[4] += self.step
+        if c == "H":
+            self.joints[4] -= self.step
+        if c == "V":
+            self.joints[5] += self.step
+        if c == "B":
+            self.joints[5] -= self.step
+
+        self.updateRobot()
         return 0
 
     def onMouseWheel(self, mouseX, mouseY, wheelDelta):

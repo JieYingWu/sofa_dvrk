@@ -32,37 +32,37 @@ class SpringEnv (Sofa.PythonScriptController):
 #        rootNode.createObject('AnimationLoopParallelScheduler', threadNumber=2)
 
         # rootNode/Floor
-        scale=[10, 1, 10]
-        translation = [100, 0, 100]
-        Floor = rootNode.createChild('Floor')
-        self.Floor = Floor
-        Floor.createObject('MeshObjLoader', name='loader', filename='mesh/floorFlat.obj')
-        Floor.createObject('MeshTopology', src='@loader')
-        Floor.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale, translation=translation)
-        Floor.createObject('TTriangleModel', simulated=0, moving=0)
-        Floor.createObject('TLineModel', simulated=0, moving=0)
-        Floor.createObject('TPointModel', simulated=0, moving=0)
-        Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale, translation=translation)
+        # scale=[10, 1, 10]
+        # translation = [100, 0, 100]
+        # Floor = rootNode.createChild('Floor')
+        # self.Floor = Floor
+        # Floor.createObject('MeshObjLoader', name='loader', filename='mesh/floorFlat.obj')
+        # Floor.createObject('MeshTopology', src='@loader')
+        # Floor.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale, translation=translation)
+        # Floor.createObject('TTriangleModel', simulated=0, moving=0)
+        # Floor.createObject('TLineModel', simulated=0, moving=0)
+        # Floor.createObject('TPointModel', simulated=0, moving=0)
+        # Floor.createObject('OglModel', name='visu', src='@loader', scale3d=scale, translation=translation)
         
         # rootNode/Spring
         Spring = rootNode.createChild('Spring')
         self.Spring = Spring
         Spring.createObject('EulerImplicitSolver', rayleighStiffness='0.03', rayleighMass='1')
         Spring.createObject('CGLinearSolver', threshold='1e-15', tolerance='1e-15', iterations='25')
-        Spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
+        Spring.createObject('MeshGmshLoader', name='loader', filename='meshes/steel_extension_spring.msh')
+        Spring.createObject('MeshSTLLoader', name='surf_loader', filename='meshes/steel_extension_spring.stl')
         Spring.createObject('MeshTopology', name='topo', src='@loader')
-#        Spring.createObject('SparseGridTopology', n='40 40 40', src='@topo')
-        Spring.createObject('MechanicalObject', name='spring', rotation='0 0 90', translation=[0, 25, 0], template='Vec3d')
-        Spring.createObject('TriangleFEMForceField', youngModulus='1e5', poissonRatio='0.26')
-#        Spring.createObject('TetrahedronFEMForceField', youngModulus='1e9', poissonRatio='0.26')
+        Spring.createObject('MechanicalObject', name='spring', rotation='0 0 90', translation=[0, 25, 0], template='Vec3d')#, showIndices='1', showIndicesScale='0.005')
+#        Spring.createObject('TriangleFEMForceField', youngModulus='1e5', poissonRatio='0.26')
+        Spring.createObject('TetrahedronFEMForceField', youngModulus='1e6', poissonRatio='0.4')
 #        Spring.createObject('MeshShapeSpringsForceField', stiffness='5')
-        Spring.createObject('UniformMass', vertexMass='1.0')
+        Spring.createObject('UniformMass', totalMass='1')
 #        Spring.createObject('FixedConstraint', indices='93', name='FixedConstraint')
-        Spring.createObject('UncoupledConstraintCorrection')
+#        Spring.createObject('UncoupledConstraintCorrection')
 
         # rootNode/Spring/VisuSpring
         VisuSpring = Spring.createChild('VisuSpring')
-        VisuSpring.createObject('OglModel', name='visu', src='@../loader', template='ExtVec3d', rotation='0 0 90', translation=[0, 25, 0])
+        VisuSpring.createObject('OglModel', name='visu', src='@../surf_loader', template='ExtVec3d', rotation='0 0 90', translation=[0, 25, 0])
         VisuSpring.createObject('BarycentricMapping', input='@..', output='@visu')
 
         # rootNode/Spring/CollSpring
@@ -85,7 +85,6 @@ class SpringEnv (Sofa.PythonScriptController):
         Cylinder.createObject('MeshObjLoader', name='loader_cyl', filename='meshes/cylinder_rot.obj')
         Cylinder.createObject('MeshTopology', src='@loader_cyl')
         Cylinder.createObject('MechanicalObject', name='Cyl', scale3d=scale, translation=translation, rotation=rotation)
-#        Cylinder.createObject('UniformMass', totalMass='10000.0')
         Cylinder.createObject('TriangleFEMForceField', youngModulus='1e5', poissonRatio='0.26')
         Cylinder.createObject('TPointModel', simulated=0, moving=0)
         Cylinder.createObject('TLineModel', simulated=0, moving=0)
@@ -93,90 +92,31 @@ class SpringEnv (Sofa.PythonScriptController):
         Cylinder.createObject('OglModel', name='visual_cyl', src='@loader_cyl', color='green', scale3d=scale, translation=translation, rotation=rotation)
         Cylinder.createObject('UncoupledConstraintCorrection')
 
-        return 0
+        # # rootNode/Weight
+        # scale = [0.1, 0.1, 0.1]
+        # translation = [10, 8, 4]
+        # rotation = [-90, 0, 90]
+        # Weight = rootNode.createChild('Weight')
+        # self.Weight = Weight
+        # Weight.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        # Weight.createObject('CGLinearSolver', threshold='1e-15', tolerance='1e-15', name='linearSolver', iterations='25')
+        # Weight.createObject('MeshObjLoader', name='loader_cyl', filename='meshes/cylinder_rot.obj')
+        # Weight.createObject('MeshTopology', src='@loader_cyl')
+        # Weight.createObject('MechanicalObject', name='Cyl', scale3d=scale, translation=translation, rotation=rotation)
+        # Weight.createObject('UniformMass', totalMass='10.0')
+        # Weight.createObject('TriangleFEMForceField', youngModulus='1e5', poissonRatio='0.26')
+        # Weight.createObject('TPointModel')
+        # Weight.createObject('TLineModel')
+        # Weight.createObject('TTriangleModel')
+        # Weight.createObject('OglModel', name='visual_cyl', src='@loader_cyl', color='green', scale3d=scale, translation=translation, rotation=rotation)
+        # Weight.createObject('UncoupledConstraintCorrection')
 
-    def onMouseButtonLeft(self, mouseX,mouseY,isPressed):
-        ## usage e.g.
-        #if isPressed : 
-        #    print "Control+Left mouse button pressed at position "+str(mouseX)+", "+str(mouseY)
-        return 0
-
-    def onKeyReleased(self, c):
-        ## usage e.g.
-        #if c=="A" :
-        #    print "You released a"
-        return 0
-
-    def initGraph(self, node):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        return 0
-
-    # Note: Hold control when key is pressed
-    def onKeyPressed(self, c):
-        ## usage e.g.
-        # print(c, 'has been pressed')
-        return 0
-
-    def onMouseWheel(self, mouseX,mouseY,wheelDelta):
-        ## usage e.g.
-        #if isPressed : 
-        #    print "Control button pressed+mouse wheel turned at position "+str(mouseX)+", "+str(mouseY)+", wheel delta"+str(wheelDelta)
-        return 0
-
-    def storeResetState(self):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        return 0
-
-    def cleanup(self):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        # self.conn.close()
-        return 0
-
-    def onGUIEvent(self, strControlID,valueName,strValue):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        print 'onGUIEvent'
-        return 0
-
-    def onEndAnimationStep(self, deltaTime):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        return 0
-
-    def onLoaded(self, node):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        return 0
-
-    def reset(self):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        return 0
-
-    def onMouseButtonMiddle(self, mouseX,mouseY,isPressed):
-        ## usage e.g.
-        #if isPressed : 
-        #    print "Control+Middle mouse button pressed at position "+str(mouseX)+", "+str(mouseY)
-        return 0
-
-    def bwdInitGraph(self, node):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        return 0
-
-    def onScriptEvent(self, senderNode, eventName,data):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        print 'onScriptEvent'
-        return 0
-
-    def onMouseButtonRight(self, mouseX,mouseY,isPressed):
-        ## usage e.g.
-        #if isPressed :
-        #    print "Control+Right mouse button pressed at position "+str(mouseX)+", "+str(mouseY)
-        return 0
-
-    def onBeginAnimationStep(self, deltaTime):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        
         return 0
 
 def createScene(rootNode):
     rootNode.findData('dt').value = '0.02'
-    rootNode.findData('gravity').value = '0 -10 0'
+    rootNode.findData('gravity').value = '0 -6 0'
     try : 
         sys.argv[0]
     except :

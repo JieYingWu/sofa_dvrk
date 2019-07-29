@@ -32,10 +32,9 @@ class RL_env(Sofa.PythonScriptController):
         rootNode.createObject('VisualStyle', displayFlags='showForceFields') # showCollisionModels')
         rootNode.createObject('DefaultPipeline', draw='0', depth='5', verbose='1')
         rootNode.createObject('BruteForceDetection', name='N2')
-        rootNode.createObject('DefaultContactManager')
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('MinProximityIntersection', contactDistance='2', alarmDistance='5', name='Proximity')
-        rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
+        rootNode.createObject('DefaultContactManager')#, name='Response', response='FrictionContact')
         rootNode.createObject('EulerImplicitSolver', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         rootNode.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
 
