@@ -18,7 +18,7 @@ class SutureEnv(Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : " + str(commandLineArguments))
 #        self.joints = np.array([0.707, 0.707, 0.707, 0.707, 0.707, 0.707])
-        self.joints = np.array([0.6, 0.2, 0.75, 3.14, 0.0, 0.0])
+        self.joints = np.array([0.6, 0.2, 0.75 3,.14, 0.0, 0.0])
 
         self.robot.LoadRobot('/home/jieying/catkin_ws/src/cisst-saw/sawIntuitiveResearchKit/share/deprecated/dvpsm.rob')
 

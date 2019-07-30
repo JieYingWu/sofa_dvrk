@@ -3,18 +3,26 @@ import math
 import Sofa
 import socket
 import numpy as np
+import cisstRobotPython
 import geometry_util as geo
 
 class SpringEnv (Sofa.PythonScriptController):
-
+    joints = np.array([-0.38621387104, 0.0774590107285, 0.09299714089, 1.43742456259, -0.206321114646, 0.21373609284])
+    step = 0.02
+    axis_scale=100
+    transform = np.array([[-0.18685107,-0.14393309,-0.97178698,-0.03070723],[0.95535989,-0.25706586,-0.14561806,-0.00643087],[-0.228854,-0.9556152,0.18554093,-0.08042132],[ 0.,0.,0.,1.]])
+    transform_inv = geo.invertTransformation(transform)
+    transform_inv = np.matmul(np.array([[1,0,0,0],[0,1,0,97],[0,0,1,0],[0,0,0,1]]),transform_inv)
+    robot = cisstRobotPython.robManipulator(transform_inv)
+    
     def __init__(self, node, commandLineArguments) : 
         self.count = 0
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))
-        self.createGraph(node)
         self.last_pos = [0, 72, 0, 0, 0, 0, 1]
-
-
+        self.robot.LoadRobot('/home/jieying/catkin_ws/src/cisst-saw/sawIntuitiveResearchKit/share/deprecated/dvpsm.rob')
+        self.createGraph(node)
+    
     def output(self):
         return
 
@@ -37,8 +45,8 @@ class SpringEnv (Sofa.PythonScriptController):
         elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
         node.createObject('MechanicalObject', name='mecha', template='Rigid3d', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('UniformMass', totalMass=mass)
-#        node.createObject('UncoupledConstraintCorrection')
+#        node.createObject('UniformMass', totalMass=mass)
+        node.createObject('UncoupledConstraintCorrection')
 
         # Visual Node
         VisuNode = node.createChild('Visu_Cyl')
@@ -65,9 +73,9 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
         node.createObject('MeshTopology', src='@loader')
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('TriangleFEMForceField', youngModulus='3e6', poissonRatio='0')
+        node.createObject('TriangleFEMForceField', youngModulus='3e12', poissonRatio='0')
         node.createObject('UniformMass', totalMass=mass)
-#        node.createObject('UncoupledConstraintCorrection')
+        node.createObject('UncoupledConstraintCorrection')
 
         # Visual Node
         VisuNode = node.createChild('Visu_Cyl')
@@ -90,13 +98,9 @@ class SpringEnv (Sofa.PythonScriptController):
 #        index = [29575, 29040, 29597]
         spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
         spring.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='20')
-        spring.createObject('MeshSTLLoader', name='loader', filename='meshes/steel_extension_spring.stl')
-#        spring.createObject('MeshGmshLoader', name='loader', filename='meshes/steel_extension_spring.msh')
-#        spring.createObject('MeshTopology', name='topo', src='@loader')
 #        spring.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='meshes/steel_extension_spring.msh')
 #        spring.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
-        spring.createObject('CylinderGridTopology', nx='3', ny='3', length='25', radius='1', nz='2', axis='1 0 0')
-#        spring.createObject('SparseGridTopology', n='20 20 20', src='@topo')
+        spring.createObject('CylinderGridTopology', nx='3', ny='3', length='25', radius='1', nz='2', axis='1 0 0', name='topo')
         spring.createObject('MechanicalObject', template='Vec3d', name='spring', rotation=rotation, translation=translation)
 #        spring.createObject('TriangularBendingSprings', stiffness='1e3', damping='1')
         spring.createObject('TriangularFEMForceField', youngModulus='1e5', poissonRatio='0.26')
@@ -105,30 +109,37 @@ class SpringEnv (Sofa.PythonScriptController):
 #        spring.createObject('RestShapeSpringsForceField', stiffness='1e3', damping='1')
         spring.createObject('UniformMass', totalMass=1.0)
         spring.createObject('FixedConstraint', indices=[0, 1, 2, 3, 4, 5, 6, 7, 8], name='FixedConstraint')
-        spring.createObject('OglModel', src='@loader')
-        spring.createObject('TTriangleModel')
-        spring.createObject('TLineModel')
-        spring.createObject('TPointModel')
- 
+        spring.createObject('UncoupledConstraintCorrection')
+        
         # rootNode/Spring/VisuSpring
-#        VisuSpring = spring.createChild('VisuSpring')
-#        VisuSpring.createObject('OglModel', name='visu', src='@../loader', color=color, template='ExtVec3d')#, rotation=rotation, translation=translation)
-#        VisuSpring.createObject('BarycentricMapping', input='@../spring', output='@visu')
+        VisuSpring = spring.createChild('VisuSpring')
+        VisuSpring.createObject('OglModel', name='visu', src='@../topo', color=color, template='ExtVec3d', rotation=rotation, translation=translation)
+        VisuSpring.createObject('BarycentricMapping', input='@../spring', output='@visu')
 
-        # # rootNode/Spring/CollSpring
-        # CollSpring = spring.createChild('CollSpring')
-        # CollSpring.createObject('MeshTopology', name='topo', src='@../loader')
-        # CollSpring.createObject('MechanicalObject', name='coll', src='@../loader', template='Vec3d')#, rotation=rotation, translation=translation)
-        # CollSpring.createObject('TTriangleModel')
-        # CollSpring.createObject('TLineModel')
-        # CollSpring.createObject('TPointModel')
-        # CollSpring.createObject('BarycentricMapping', input='@../spring', output='@.')
+        # rootNode/Spring/CollSpring
+#        CollSpring = spring.createChild('CollSpring')
+#        CollSpring.createObject('MechanicalObject', name='coll', src='@../topo', template='Vec3d', rotation=rotation, translation=translation)
+#        CollSpring.createObject('TTriangleModel')
+#        CollSpring.createObject('TLineModel')
+#        CollSpring.createObject('TPointModel')
+#        CollSpring.createObject('BarycentricMapping', input='@../spring', output='@.')
         
         return 0
+
+    def populateLink(self,link, N, translation='0 0 0', rotation='0 0 0', color='gray'):
+        link.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.03', name='odesolver', rayleighMass='1')
+        link.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='20')
+        pose = self.robot.ForwardKinematics(self.joints, N=N)
+        link_pos = geo.matToPos(pose)
+        
+        link.createObject('MechanicalObject', name='mecha', template='Rigid3d', position=link_pos)
+#        link.createObject('UniformMass', totalMass='1', showAxisSizeFactor=str(self.axis_scale))
+
+
     
     def createGraph(self,rootNode):
         rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaOpenglVisual')# SofaCUDA')
-        rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels showCollisionModels')# showInteractionForceFields showForceFields')
+        rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels')# showInteractionForceFields showForceFields')
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)
         rootNode.createObject('BruteForceDetection')
         rootNode.createObject('MinProximityIntersection', contactDistance=0.5, alarmDistance=0.8)
@@ -207,65 +218,59 @@ class SpringEnv (Sofa.PythonScriptController):
         self.populateSpring(Spring3, translation, rotation, color='blue')
         self.Spring3 = Spring3
 
-        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring0', twoWay='true', indices1='159', indices2='13', constraintFactor='1')
-        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring1', twoWay='true', indices1='212', indices2='13', constraintFactor='1')
-        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring2', twoWay='true', indices1='246', indices2='13', constraintFactor='1')
-        rootNode.createObject('AttachConstraint', object1='@Tabletop', object2='@Spring3', twoWay='true', indices1='90', indices2='13', constraintFactor='1')
+        rootNode.createObject('AttachConstraint', name='ac0', object1='@Tabletop', object2='@Spring0', twoWay='true', indices1='159', indices2='13', constraintFactor='1')
+        rootNode.createObject('AttachConstraint', name='ac1', object1='@Tabletop', object2='@Spring1', twoWay='true', indices1='212', indices2='13', constraintFactor='1')
+        rootNode.createObject('AttachConstraint', name='ac2', object1='@Tabletop', object2='@Spring2', twoWay='true', indices1='246', indices2='13', constraintFactor='1')
+        rootNode.createObject('AttachConstraint', name='ac3', object1='@Tabletop', object2='@Spring3', twoWay='true', indices1='90', indices2='13', constraintFactor='1')
         
-        r = cisstRobotPython.robManipulator()
-        r.LoadRobot('/home/jieying/catkin_ws/src/cisst-saw/sawIntuitiveResearchKit/share/deprecated/dvpsm.rob')
-#        q = np.array([0.707, 0.707, 0.707, 0.707, 0.707, 0.707])
-        q = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        
-        # rootNode/BaseLink
-        pose = r.ForwardKinematics(q, N=0)
-        base_pos = geo.matToPos(pose)
+        # rootNode/Link0
+        Link0 = rootNode.createChild('Link0')
+        self.populateLink(Link0, 0)
+        self.Link0 = Link0
 
-        BaseLink = rootNode.createChild('BaseLink')
-        self.BaseLink = BaseLink
-        BaseLink.createObject('MeshSTLLoader', name='loader', filename='meshes/psm/psm_base.stl')
-        BaseLink.createObject('MechanicalObject', name='mecha', template='Rigid', translation='0 0 0', rotation='0 0 0 0', position='0 0 0 0 0 0 1')#geo.posToStr('0.039 -0.40788 -0.07879 -90.0 0.0 0.0'))
-        BaseLink.createObject('UniformMass', totalMass='1', template='Rigid', showAxisSizeFactor=str(self.axis_scale))
-
-        # Visual Node
-        VisuBase = BaseLink.createChild('VisuBase')
-        VisuBase.createObject('OglModel', name='visual', src='@../loader')#,
-                              #scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        VisuBase.createObject('RigidMapping', input='@../mecha', output='@visual')
-        
-        # # rootNode/Link1
-        pose = r.ForwardKinematics(q, N=1)
-        link1_pos = geo.matToTrans(pose)
-        link1_rot = geo.matToRot(pose)
-        
+        # rootNode/Link1
         Link1 = rootNode.createChild('Link1')
+        self.populateLink(Link1, 1)
         self.Link1 = Link1
-        Link1.createObject('MeshSTLLoader', name='loader', filename='meshes/psm/outer_yaw.stl')
-        Link1.createObject('MechanicalObject', name='mecha', template='Rigid', translation=link1_pos, rotation=link1_rot, position=geo.posToStr('0.0125 -0.08 0.2965 0.0 -90.0 -90.0'))
-        Link1.createObject('UniformMass', totalMass='1', template='Rigid', showAxisSizeFactor=str(self.axis_scale))
 
-        # Visual Node
-        VisuLink1 = Link1.createChild('VisuLink1')
-        VisuLink1.createObject('OglModel', name='visual', src='@../loader')#,
-                              #scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        VisuLink1.createObject('RigidMapping', input='@../mecha', output='@visual')
-        CollSpring.createObject('TTriangleModel')
-        CollSpring.createObject('TLineModel')
-        CollSpring.createObject('TPointModel')
- 
+        # rootNode/Link2
+        Link2 = rootNode.createChild('Link2')
+        self.populateLink(Link2, 2)
+        self.Link2 = Link2
 
+        # rootNode/Link3
+        Link3 = rootNode.createChild('Link3')
+        self.populateLink(Link3, 3)
+        self.Link3 = Link3
+
+        # rootNode/Link4
+        Link4 = rootNode.createChild('Link4')
+        self.populateLink(Link4, 4)
+        self.Link4 = Link4
+
+        # rootNode/Link5
+        Link5 = rootNode.createChild('Link5')
+        self.populateLink(Link5, 5)
+        self.Link5 = Link5
+
+        # rootNode/Link6
+        Link6 = rootNode.createChild('Link6')
+        self.populateLink(Link6, 6)
+        self.Link6 = Link6
+        
         # rootNode/Cylinder
-        # scale = [0.5, 0.5, 0.5]
-        # translation = [12, 90, -8]
-        # Cylinder = rootNode.createChild('Cylinder')
-        # self.populateVec(Cylinder, 'meshes/cylinder_rot.obj', translation=translation, scale=scale, mass=1e5, color='purple')
-        # self.Cylinder = Cylinder
+        scale = [0.2, 0.2, 0.2]
+#        translation = [12, 90, -8]
+        Cylinder = rootNode.createChild('Cylinder')
+        cylinderPos = self.robot.ForwardKinematics(self.joints)
+        print(str(cylinderPos))
+        self.populateRigid(Cylinder, 'meshes/cylinder_rot.obj', translation=geo.matToTrans(cylinderPos), rotation=geo.matToRot(cylinderPos), scale=scale, mass=1e3, color='yellow')
+        self.Cylinder = Cylinder
         
         return 0
 
     def onMouseButtonLeft(self, mouseX,mouseY,isPressed):
-        ## usage e.g.
-        #if isPressed : 
+        ## usage e.g.Cylinder
         #    print "Control+Left mouse button pressed at position "+str(mouseX)+", "+str(mouseY)
         return 0
 
@@ -279,10 +284,62 @@ class SpringEnv (Sofa.PythonScriptController):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         return 0
 
+    def updateRobot(self):
+        cylinderPos = self.robot.ForwardKinematics(self.joints)
+        cylinderPos = geo.matToPos(cylinderPos)
+        l0Pos = self.robot.ForwardKinematics(self.joints, N=0)
+        l0Pos = geo.matToPos(l0Pos)
+        l1Pos = self.robot.ForwardKinematics(self.joints, N=1)
+        l1Pos = geo.matToPos(l1Pos)
+        l2Pos = self.robot.ForwardKinematics(self.joints, N=2)
+        l2Pos = geo.matToPos(l2Pos)
+        l3Pos = self.robot.ForwardKinematics(self.joints, N=3)
+        l3Pos = geo.matToPos(l3Pos)
+        l4Pos = self.robot.ForwardKinematics(self.joints, N=4)
+        l4Pos = geo.matToPos(l4Pos)
+        l5Pos = self.robot.ForwardKinematics(self.joints, N=5)
+        l5Pos = geo.matToPos(l5Pos)
+        l6Pos = self.robot.ForwardKinematics(self.joints, N=6)
+        l6Pos = geo.matToPos(l6Pos)
+
+        self.Cylinder.getObject('mecha').position = cylinderPos
+        self.Link0.getObject('mecha').position = l0Pos
+        self.Link1.getObject('mecha').position = l1Pos
+        self.Link2.getObject('mecha').position = l2Pos
+        self.Link3.getObject('mecha').position = l3Pos
+        self.Link4.getObject('mecha').position = l4Pos
+        self.Link5.getObject('mecha').position = l5Pos
+        self.Link6.getObject('mecha').position = l6Pos
+        
     # Note: Hold control when key is pressed
     def onKeyPressed(self, c):
-        ## usage e.g.
-        # print(c, 'has been pressed')
+        # usage e.g.
+        if c == "Q":
+            self.joints[0] += self.step
+        if c == "W":
+            self.joints[0] -= self.step
+        if c == "A":
+            self.joints[1] += self.step
+        if c == "D":
+            self.joints[1] -= self.step
+        if c == "Z":
+            self.joints[2] += self.step
+        if c == "X":
+            self.joints[2] -= self.step
+        if c == "T":
+            self.joints[3] += self.step
+        if c == "Y":
+            self.joints[3] -= self.step
+        if c == "G":
+            self.joints[4] += self.step
+        if c == "H":
+            self.joints[4] -= self.step
+        if c == "V":
+            self.joints[5] += self.step
+        if c == "B":
+            self.joints[5] -= self.step
+
+        self.updateRobot()
         return 0
 
     def onMouseWheel(self, mouseX,mouseY,wheelDelta):
