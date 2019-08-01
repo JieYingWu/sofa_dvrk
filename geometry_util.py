@@ -101,7 +101,7 @@ def q_mult(q1, q2):
 def matToPos(T):
     rot = R.from_dcm(np.array(T)[0:3,0:3])
     q = rot.as_quat()
-    t = np.transpose(T[0:3, 3])
+    t = np.transpose(T[0:3, 3]) #* 1000
     return arrToStr(t) + ' ' +  arrToStr(q)
 
 # Extract translation from transformation matrix as a str
