@@ -5,17 +5,6 @@ import numpy as np
 import geometry_util as geo
 
 class RL_env(Sofa.PythonScriptController):
-    count = 0
-    HOST = ''  # Symbolic name meaning the local host
-    PORT = 50007  # Arbitrary non-privileged port
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn = 0
-    data = 0
-    mesh_size = 0
-    visual_size = 0
-    counter = 0
-    state = 0
-    addr = 0
 
     def __init__(self, node, commandLineArguments):
         self.count = 0
@@ -28,84 +17,68 @@ class RL_env(Sofa.PythonScriptController):
 
         gravity = '0 0 0'
         # rootNode
-        rootNode.createObject('RequiredPlugin', pluginName='CImgPlugin')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaOpenglVisual SofaPython')
         rootNode.createObject('VisualStyle', displayFlags='showForceFields') # showCollisionModels')
+        rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
+        rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
         rootNode.createObject('DefaultPipeline', draw='0', depth='5', verbose='1')
         rootNode.createObject('BruteForceDetection', name='N2')
         rootNode.createObject('DiscreteIntersection')
-        rootNode.createObject('MinProximityIntersection', contactDistance='2', alarmDistance='5', name='Proximity')
-        rootNode.createObject('DefaultContactManager')#, name='Response', response='FrictionContact')
-        rootNode.createObject('EulerImplicitSolver', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
-        rootNode.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
+        rootNode.createObject('MinProximityIntersection', contactDistance='1', alarmDistance='2', name='Proximity')
+        rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
         # rootNode/Cylinder
         size = 0.1
         scale = 1
+        shift = 10
         Cylinder = rootNode.createChild('Cylinder')
         self.Cylinder = Cylinder
-        Cylinder.createObject('MechanicalObject', name='Cyl', template='Rigid', rx='90', dy='10', dz='25')
+        Cylinder.createObject('EulerImplicitSolver', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        Cylinder.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
+        Cylinder.createObject('CylinderGridTopology', nx='5', ny='5', length='25', radius='3', nz='3', axis='1 0 0', name='loader')
+#        Cylinder.createObject('MeshTopology', src='@loader')
+        Cylinder.createObject('MechanicalObject', name='Cyl', template='Vec3d', src='@loader', dx=shift)
+        Cylinder.createObject('TriangleFEMForceField', youngModulus='3e6', poissonRatio='0')
         Cylinder.createObject('UniformMass', totalMass='1')
-
+        Cylinder.createObject('UncoupledConstraintCorrection')
+        
         # Visual Node
         VisuNode = Cylinder.createChild('Visu_Cyl')
-        VisuNode.createObject('MeshSTLLoader', name='visual_loader', filename='meshes/test_coarse.STL')
-        VisuNode.createObject('OglModel', name='visual_cyl', src='@visual_loader', color='green',
-                              scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        VisuNode.createObject('RigidMapping', input='@../Cyl', output='@visual_cyl')
+        VisuNode.createObject('OglModel', name='visual_cyl', src='@../loader', color='green', dx=shift)
+        VisuNode.createObject('BarycentricMapping', input='@../Cyl', output='@visual_cyl')
 
         # Collision Node
         CollNode = Cylinder.createChild('Coll_Cyl')
-        CollNode.createObject('MeshSTLLoader', name='loader_cyl', filename='meshes/test_coarse.STL')
-        CollNode.createObject('MeshTopology', src="@loader_cyl")
-        CollNode.createObject('MechanicalObject', scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        CollNode.createObject('TTriangleModel')
-        CollNode.createObject('TLineModel')
-        CollNode.createObject('TPointModel')
-        CollNode.createObject('RigidMapping')
-
-        # rootNode/Cylinder
-        Cylinder2 = rootNode.createChild('Cylinder2')
-        self.Cylinder2 = Cylinder2
-        Cylinder2.createObject('MechanicalObject', name='Cyl2', template='Rigid', rx='90', dy='10', dz='25')
-        Cylinder2.createObject('UniformMass', totalMass='1')
-
-        # Visual Node
-        VisuNode2 = Cylinder2.createChild('Visu_Cyl2')
-        VisuNode2.createObject('OglModel', name='visual_cyl2', fileMesh='meshes/cylinder_rot.obj', color='red',
-                              scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        VisuNode2.createObject('RigidMapping', input='@../Cyl2', output='@visual_cyl2')
-
-        # Collision Node
-        CollNode2 = Cylinder2.createChild('Coll_Cyl2')
-        CollNode2.createObject('MeshObjLoader', name='loader_cyl2', filename='meshes/cylinder_rot.obj')
-        CollNode2.createObject('MeshTopology', src="@loader_cyl2")
-        CollNode2.createObject('MechanicalObject', scale3d=str(size) + ' ' + str(scale * size) + ' ' + str(size))
-        CollNode2.createObject('TTriangleModel')
-        CollNode2.createObject('TLineModel')
-        CollNode2.createObject('TPointModel')
-        CollNode2.createObject('RigidMapping')
+        CollNode.createObject('MechanicalObject', src = '@../loader', dx=shift)
+        CollNode.createObject('TriangleCollisionModel')
+        CollNode.createObject('LineCollisionModel')
+        CollNode.createObject('PointCollisionModel')
+        CollNode.createObject('BarycentricMapping')
         
         # rootNode/Cube
-        dz = '20'
         Cube = rootNode.createChild('Cube')
         self.Cube = Cube
-        Cube.createObject('MechanicalObject', name='Cube', template='Rigid', dz=dz)
+        Cube.createObject('EulerImplicitSolver', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        Cube.createObject('CGLinearSolver', threshold='1e-8', tolerance='1e-5', name='linearSolver', iterations='25')
+        Cube.createObject('MeshObjLoader', name='loader', filename='mesh/smCube27.obj')
+        Cube.createObject('MeshTopology', src='@loader')
+        Cube.createObject('MechanicalObject', name='Cube', template='Vec3d', src='@loader')
+        Cube.createObject('TriangleFEMForceField', youngModulus='3e6', poissonRatio='0')
         Cube.createObject('UniformMass', totalMass='5')
+        Cube.createObject('UncoupledConstraintCorrection')
 
         # Visual Node
         VisuNodeCube = Cube.createChild('Visu_Cube')
-        VisuNodeCube.createObject('OglModel', name='visual_cube', fileMesh='mesh/smCube27.obj', color='blue', dz=dz)
-        VisuNodeCube.createObject('RigidMapping', input='@../Cube', output='@visual_cube')
+        VisuNodeCube.createObject('OglModel', name='visual_cube', src='@../loader', color='blue')
+        VisuNodeCube.createObject('BarycentricMapping', input='@../Cube', output='@visual_cube')
 
         # Collision Node
         CollNodeCube = Cube.createChild('Coll_Cube')
-        CollNodeCube.createObject('MeshObjLoader', name='loader_cube', filename='mesh/smCube27.obj')
-        CollNodeCube.createObject('MeshTopology', src="@loader_cube")
-        CollNodeCube.createObject('MechanicalObject', dz=dz)
-        CollNodeCube.createObject('TTriangleModel')
-#        CollNodeCube.createObject('TLineModel')
-#        CollNodeCube.createObject('TPointModel')
-        CollNodeCube.createObject('RigidMapping')
+        CollNodeCube.createObject('MechanicalObject', template='Vec3d', src='@../loader')
+        CollNodeCube.createObject('TriangleCollisionModel')
+        CollNodeCube.createObject('LineCollisionModel')
+        CollNodeCube.createObject('PointCollisionModel')
+        CollNodeCube.createObject('BarycentricMapping')
 
         return 0
 

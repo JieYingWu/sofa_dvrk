@@ -43,7 +43,7 @@ class SpringEnv (Sofa.PythonScriptController):
         elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
         node.createObject('MechanicalObject', name='mecha', template='Rigid3d', scale3d=scale, position=position)
-        node.createObject('UniformMass', totalMass=mass)
+        node.createObject('UniformMass', totalMass=mass)#, showAxisSizeFactor=str(self.axis_scale))
         node.createObject('UncoupledConstraintCorrection')
 
         # Visual Node
@@ -71,7 +71,7 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
         node.createObject('MeshTopology', src='@loader')
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('TriangleFEMForceField', youngModulus='3e6', poissonRatio='0')
+        node.createObject('TriangleFEMForceField', youngModulus='3e15', poissonRatio='0')
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
@@ -98,9 +98,9 @@ class SpringEnv (Sofa.PythonScriptController):
         spring.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='30')
         spring.createObject('CylinderGridTopology', nx='3', ny='3', length='25', radius='1', nz='2', axis='1 0 0', name='topo')
         spring.createObject('MechanicalObject', template='Vec3d', name='spring', rotation=rotation, translation=translation)
-        spring.createObject('TriangularFEMForceField', youngModulus='5', poissonRatio='0.4')
+        spring.createObject('TriangularFEMForceField', youngModulus='1', poissonRatio='0.4')
         spring.createObject('UniformMass', totalMass=1.0)
-        spring.createObject('FixedConstraint', indices=[0, 1, 2, 3, 4, 5, 6, 7, 8], name='FixedConstraint')
+        spring.createObject('FixedConstraint', indices=[0, 1, 2, 3, 4, 5, 6, 7, 8])
         spring.createObject('UncoupledConstraintCorrection')
         
         # rootNode/Spring/VisuSpring
@@ -119,7 +119,7 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('BruteForceDetection')
         rootNode.createObject('MinProximityIntersection', contactDistance=2, alarmDistance=5)
         rootNode.createObject('DiscreteIntersection')
-        rootNode.createObject('DefaultContactManager')
+        rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
         tableWidth = 95.7
         tableHeight = 72
@@ -290,8 +290,8 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onBeginAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-#        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
-#        self.robot_step += 1
+        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
+        self.robot_step += 1
         return 0
 
 def createScene(rootNode):
