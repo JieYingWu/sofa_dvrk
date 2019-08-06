@@ -48,11 +48,18 @@ def strToArr(s):
     return a
 
 # Convert an array to string for SOFA input
-def arrToStr(a):
+def arrToStr(a, delimiter=""):
     s = str(a)
     s = s.replace(",", "")
     s = s.replace("[", "")
     s = s.replace("]", "")
+    s = s.replace("\n", "")
+    s = s.replace("\t", "")
+    s = s.replace("  ", " ")
+    if s[0] is ' ':
+        s = s[1:]
+    if delimiter is not "":
+        s = s.replace(' ', delimiter)
     return s
 
 # Get the quaternion portion of a string
