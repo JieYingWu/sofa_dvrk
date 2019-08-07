@@ -60,6 +60,7 @@ def arrToStr(a, delimiter=""):
         s = s[1:]
     if delimiter is not "":
         s = s.replace(' ', delimiter)
+        s = s.replace(',,', ',')
     return s
 
 # Get the quaternion portion of a string

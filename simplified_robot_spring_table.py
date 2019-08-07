@@ -8,18 +8,20 @@ import geometry_util as geo
 
 class SpringEnv (Sofa.PythonScriptController):
     robot_step = 0
+    write_step = 0
     step = 0.05
     axis_scale=100
+    time = 0
 
     # Set so the first position is at centre of the platform
     def __init__(self, node, commandLineArguments) : 
         self.count = 0
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
-        self.robot_pos = np.genfromtxt('../dataset/2019-07-30/' + 'position_cartesian_processed.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/2019-07-30/' + 'data_cartesian_processed.csv', delimiter=',')
+#        self.robot_pos = np.genfromtxt('../dataset/2019-07-30/' + 'test.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
-        self.robot_step += 1
         
     def output(self):
         return
@@ -121,6 +123,7 @@ class SpringEnv (Sofa.PythonScriptController):
         return 0
     
     def createGraph(self,rootNode):
+        self.rootNode = rootNode
         rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaOpenglVisual')# SofaCUDA')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels')# showInteractionForceFields showForceFields')
         rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
@@ -264,12 +267,13 @@ class SpringEnv (Sofa.PythonScriptController):
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         pos = np.array(self.Tabletop.getObject('mecha').position)
-        self.f.write(geo.arrToStr(pos, delimiter=',') + '\n')
+        self.f.write(str(self.time) + ',' +  geo.arrToStr(pos, delimiter=',') + '\n')
 #        self.f.write(str(pos[287]) + str(pos[286]) + str(pos[288]) + str(pos[290]) + '\n') 
 #        self.Tabletop.getObject('mecha').position = geo.arrToStr(self.last_pos)
 #        print('pos is ' + str(pos))
 #        print('last_pos is ' + str(self.last_pos[0]))
 #        self.last_pos = pos
+        self.time += self.rootNode.findData('dt').value
         
         return 0
 
@@ -311,11 +315,12 @@ class SpringEnv (Sofa.PythonScriptController):
             self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
             self.robot_step += 1
         else:
+            self.f.flush()
             exit()
         return 0
 
 def createScene(rootNode):
-    rootNode.findData('dt').value = '0.01'
+    rootNode.findData('dt').value = '0.01005308'
     rootNode.findData('gravity').value = '0 0 0'
     try : 
         sys.argv[0]
