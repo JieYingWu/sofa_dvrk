@@ -3,7 +3,6 @@ import math
 import Sofa
 import socket
 import numpy as np
-import cisstRobotPython
 import geometry_util as geo
 
 class SpringEnv (Sofa.PythonScriptController):
@@ -18,8 +17,8 @@ class SpringEnv (Sofa.PythonScriptController):
         self.count = 0
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
-        self.robot_pos = np.genfromtxt('../dataset/2019-07-30/' + 'data_cartesian_processed.csv', delimiter=',')
-#        self.robot_pos = np.genfromtxt('../dataset/2019-07-30/' + 'test.csv', delimiter=',')
+#        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_long_cartesian_processed.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         
@@ -137,7 +136,7 @@ class SpringEnv (Sofa.PythonScriptController):
         tableWidth = 95.7
         tableHeight = 72
         
-        # rootNode/Support0
+        # roo19.24Support0
         supportHeight = 95.7
         offset = tableWidth/2+16
         height = supportHeight/2
@@ -218,9 +217,8 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e8, object1='@Spring3', object2='@Tabletop/Coll', box_object1='-1 60 40 1 70 60', box_object2='-1 60 40 1 70 50', forceOldBehavior='false')
 
         # rootNode/Instrument
-        scale = [0.2, 0.2, 0.2]
         Instrument = rootNode.createChild('Instrument')
-        self.populateRigid(Instrument, 'meshes/cylinder_rot.obj', scale=scale, mass=1e3, color='yellow')
+        self.populateRigid(Instrument, 'meshes/cylinder.obj', mass=1e3, color='yellow')
         self.Instrument = Instrument
         return 0
 
