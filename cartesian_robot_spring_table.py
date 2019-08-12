@@ -314,7 +314,7 @@ class SpringEnv (Sofa.PythonScriptController):
             self.robot_step += 1
         else:
             self.f.flush()
-            exit()
+            self.rootNode.getRootContext().animate = False
         return 0
 
 def createScene(rootNode):
