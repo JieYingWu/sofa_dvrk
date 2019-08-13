@@ -70,12 +70,16 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('MeshObjLoader', name='loader', filename=filename)
         elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
-        node.createObject('MeshTopology', src='@loader', name='topo')
-#        node.createObject('SparseGridTopology', n='10 10 10', src='@topo')
+        elif (filename[-4:] == '.msh'):
+              node.createObject('MeshGmshLoader', name='loader', filename=filename)
+#        node.createObject('MeshTopology', src='@loader', name='topo')
+        node.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='mesh/smCube27.msh')
+        node.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+        node.createObject('TetrahedronSetTopologyModifier')
+        node.createObject('TetrahedronSetTopologyAlgorithms')
+        node.createObject('TetrahedronModel', src="@loader")
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('TriangleFEMForceField', youngModulus='3e15', poissonRatio='0')
-#        node.createObject('TetrahedronFEMForceField', youngModulus='3e15', poissonRatio='0')
-#        node.createObject('MeshSpringForceField', stiffness='1e12', damping='1')
+        node.createObject('TetrahedronFEMForceField', youngModulus='3e5', poissonRatio='0')
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
@@ -83,15 +87,6 @@ class SpringEnv (Sofa.PythonScriptController):
         VisuNode = node.createChild('Visu_Cyl')
         VisuNode.createObject('OglModel', name='visual', src='@../loader', color=color, scale3d=scale)
         VisuNode.createObject('IdentityMapping', input='@..', output='@visual')
-
-        # Collision Node
-        CollNode = node.createChild('Coll_Cyl')
-        CollNode.createObject('MeshTopology', src="@../loader")
-        CollNode.createObject('MechanicalObject', src='@../loader', scale3d=scale)
-        CollNode.createObject('PointCollisionModel')
-        CollNode.createObject('LineCollisionModel')
-        CollNode.createObject('TriangleCollisionModel')
-        CollNode.createObject('IdentityMapping')
 
         return 0
     
@@ -108,11 +103,11 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
-
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
-        self.populateVec(Phantom, 'meshes/gel_phantom_0.STL', mass=1e3, color='green')
-        self.Phatnom = Phantom
+        scale=[30, 30, 30]
+        self.populateVec(Phantom, 'meshes/SimpleBeamTetra.msh', mass=1e3, color='green', scale=scale)
+        self.Phantom = Phantom
 
         # rootNode/Instrument
         Instrument = rootNode.createChild('Instrument')
@@ -152,7 +147,6 @@ class SpringEnv (Sofa.PythonScriptController):
     def cleanup(self):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         # self.conn.close()
-        self.f.close()
         return 0
 
     def onGUIEvent(self, strControlID,valueName,strValue):
@@ -162,14 +156,11 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        pos = np.array(self.Tabletop.getObject('mecha').position)
-        self.f.write(str(self.time) + ',' +  geo.arrToStr(pos, delimiter=',') + '\n')
-#        self.f.write(str(pos[287]) + str(pos[286]) + str(pos[288]) + str(pos[290]) + '\n') 
-#        self.Tabletop.getObject('mecha').position = geo.arrToStr(self.last_pos)
-#        print('pos is ' + str(pos))
-#        print('last_pos is ' + str(self.last_pos[0]))
-#        self.last_pos = pos
+        self.f = open("test/position" + str(self.robot_step) + ".txt","w")
+        pos = np.array(self.Phantom.getObject('mecha').position)
+        self.f.write(str(pos) + '\n')
         self.time += self.rootNode.findData('dt').value
+        self.f.close()
         
         return 0
 
@@ -188,9 +179,7 @@ class SpringEnv (Sofa.PythonScriptController):
         return 0
 
     def bwdInitGraph(self, node):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        self.f = open("measurements/position.txt","w+")
-        
+        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py        
         return 0
 
     def onScriptEvent(self, senderNode, eventName,data):
@@ -211,11 +200,11 @@ class SpringEnv (Sofa.PythonScriptController):
             self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
             self.robot_step += 1
         else:
-            self.f.flush()
             self.rootNode.getRootContext().animate = False
         return 0
 
 def createScene(rootNode):
+    np.set_printoptions(threshold=sys.maxsize)
     rootNode.findData('dt').value = '0.01005308'
     rootNode.findData('gravity').value = '0 0 0'
     try : 
