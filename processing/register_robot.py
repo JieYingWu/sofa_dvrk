@@ -10,16 +10,16 @@ from scipy.spatial.transform import Rotation as R
 scale = 1000
 table_points = np.array([[31.8,96.05,0], [15.9,96.05,-31.8], [-31.8,96.05,-15.9], [-31.8,96.05,31.8]])
 
-# Currently manually read out from file
-measured_points = np.array([[-0.00282601136754,-0.0062888038662,-0.0932844615085],[0.0236521042868,0.0105876960433,-0.0935333671393],[0.00579400872003,0.0526017481315,-0.093906899099],[-0.0362004390969,0.0487251420195,-0.0957448310665]])*scale
+# # Currently manually read out from file
+# measured_points = np.array([[-0.00282601136754,-0.0062888038662,-0.0932844615085],[0.0236521042868,0.0105876960433,-0.0935333671393],[0.00579400872003,0.0526017481315,-0.093906899099],[-0.0362004390969,0.0487251420195,-0.0957448310665]])*scale
 
-# Registers measured_points to table_points
-transform = cisstNumericalPython.nmrRegistrationRigid(measured_points, table_points)
-transform = transform[0]
-q = R.from_dcm(transform.Rotation()).inv().as_quat()
-q_inv = R.from_dcm(transform.Rotation()).as_quat()
-transform = np.concatenate((transform.Rotation(), np.expand_dims(transform.Translation(), 1)), 1)
-transform = np.concatenate((transform, np.array([[0,0,0,1]])), 0)
+# # Registers measured_points to table_points
+# transform = cisstNumericalPython.nmrRegistrationRigid(measured_points, table_points)
+# transform = transform[0]
+# q = R.from_dcm(transform.Rotation()).inv().as_quat()
+# q_inv = R.from_dcm(transform.Rotation()).as_quat()
+# transform = np.concatenate((transform.Rotation(), np.expand_dims(transform.Translation(), 1)), 1)
+# transform = np.concatenate((transform, np.array([[0,0,0,1]])), 0)
 
 data = np.genfromtxt(str(sys.argv[1]), delimiter=',')
 length = data.shape[0]-1 # First line is field names

@@ -18,7 +18,7 @@ class SpringEnv (Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
-        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_long_cartesian_processed.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'calibration_cartesian_processed.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         
