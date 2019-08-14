@@ -18,7 +18,7 @@ class SpringEnv (Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
-        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'calibration_cartesian_processed.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'calibration_robot_cartesian_processed.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         
@@ -72,14 +72,14 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
         elif (filename[-4:] == '.msh'):
               node.createObject('MeshGmshLoader', name='loader', filename=filename)
-#        node.createObject('MeshTopology', src='@loader', name='topo')
-        node.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='mesh/smCube27.msh')
-        node.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
-        node.createObject('TetrahedronSetTopologyModifier')
-        node.createObject('TetrahedronSetTopologyAlgorithms')
-        node.createObject('TetrahedronModel', src="@loader")
+        node.createObject('MeshTopology', src='@loader', name='topo')
+#        node.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='mesh/smCube27.msh')
+#        node.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+#        node.createObject('TetrahedronSetTopologyModifier')
+#        node.createObject('TetrahedronSetTopologyAlgorithms')
+#        node.createObject('TetrahedronModel', src="@loader")
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('TetrahedronFEMForceField', youngModulus='3e5', poissonRatio='0')
+#        node.createObject('TetrahedronFEMForceField', youngModulus='3e5', poissonRatio='0')
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
@@ -106,7 +106,8 @@ class SpringEnv (Sofa.PythonScriptController):
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
         scale=[30, 30, 30]
-        self.populateVec(Phantom, 'meshes/SimpleBeamTetra.msh', mass=1e3, color='green', scale=scale)
+#        self.populateVec(Phantom, 'meshes/SimpleBeamTetra.msh', mass=1e3, color='green', scale=scale)
+        self.populateVec(Phantom, 'meshes/gel_phantom_1.STL', mass=1e3, color='green')
         self.Phantom = Phantom
 
         # rootNode/Instrument
