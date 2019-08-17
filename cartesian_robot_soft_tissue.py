@@ -20,7 +20,7 @@ class SpringEnv (Sofa.PythonScriptController):
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
         self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'calibration_robot_cartesian_processed.csv', delimiter=',')
         self.createGraph(node)
-        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
+#        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         
     def output(self):
         return
