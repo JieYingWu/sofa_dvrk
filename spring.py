@@ -18,7 +18,7 @@ class SpringEnv (Sofa.PythonScriptController):
         return
 
     def createGraph(self,rootNode):
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaCUDA SofaOpenglVisual')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython')# SofaCUDA SofaOpenglVisual')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels showInteractionForceFields showForceFields')
 #        rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
 #        rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)

@@ -18,21 +18,21 @@ class SpringEnv (Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
-        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'calibration_robot_cartesian_processed.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'data0_robot_cartesian_processed.csv', delimiter=',')
         self.createGraph(node)
-#        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
+        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         
     def output(self):
         return
 
 
     def populateNonMoving(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
-        node.createObject('MeshSTLLoader', name='loader', filename=filename)
+        node.createObject('MeshObjLoader', name='loader', filename=filename)
         node.createObject('MeshTopology', src='@loader')
         node.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('TriangleCollisionModel', simulated=0, moving=0)
-        node.createObject('LineCollisionModel', simulated=0, moving=0)
-        node.createObject('PointCollisionModel', simulated=0, moving=0)
+        node.createObject('TTriangleModel', simulated=0, moving=0)
+        node.createObject('TLineModel', simulated=0, moving=0)
+        node.createObject('TPointModel', simulated=0, moving=0)
         node.createObject('OglModel', name='visu', src='@loader', scale3d=scale, translation=translation, rotation=rotation, color=color)
         
 
@@ -56,9 +56,9 @@ class SpringEnv (Sofa.PythonScriptController):
         CollNode = node.createChild('Coll')
         CollNode.createObject('MeshTopology', src="@../loader")
         CollNode.createObject('MechanicalObject', src='@../loader', name='coll', scale3d=scale, template='Vec3d')
-        CollNode.createObject('PointCollisionModel')
-        CollNode.createObject('LineCollisionModel')
-        CollNode.createObject('TriangleCollisionModel')
+        CollNode.createObject('TTriangleModel')
+        CollNode.createObject('TLineModel')
+        CollNode.createObject('TPointModel')
         CollNode.createObject('RigidMapping', input='@../mecha', output='@coll')
 
         return 0
@@ -68,32 +68,43 @@ class SpringEnv (Sofa.PythonScriptController):
         node.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
         if (filename[-4:] == '.obj'):
             node.createObject('MeshObjLoader', name='loader', filename=filename)
+            node.createObject('MeshTopology', src='@loader', name='topo')
         elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
             node.createObject('MeshSTLLoader', name='loader', filename=filename)
+            node.createObject('MeshTopology', src='@loader', name='topo')
         elif (filename[-4:] == '.msh'):
-              node.createObject('MeshGmshLoader', name='loader', filename=filename)
-        node.createObject('MeshTopology', src='@loader', name='topo')
-#        node.createObject('TetrahedronSetTopologyContainer', src='@loader', fileTopology='mesh/smCube27.msh')
-#        node.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
-#        node.createObject('TetrahedronSetTopologyModifier')
-#        node.createObject('TetrahedronSetTopologyAlgorithms')
+            node.createObject('MeshGmshLoader', name='loader', filename=filename, translation=translation)
+            node.createObject('TetrahedronSetTopologyContainer', src='@loader')#, fileTopology='mesh/smCube27.msh')
+            node.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+            node.createObject('TetrahedronSetTopologyModifier')
+            node.createObject('TetrahedronSetTopologyAlgorithms')
 #        node.createObject('TetrahedronModel', src="@loader")
-        node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, translation=translation, rotation=rotation)
-#        node.createObject('TetrahedronFEMForceField', youngModulus='3e5', poissonRatio='0')
+        node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, rotation=rotation)
+        node.createObject('TetrahedronFEMForceField', youngModulus='3e2', poissonRatio='0')
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
         # Visual Node
         VisuNode = node.createChild('Visu_Cyl')
-        VisuNode.createObject('OglModel', name='visual', src='@../loader', color=color, scale3d=scale)
+        VisuNode.createObject('MeshSTLLoader', name='loader', filename='meshes/gel_phantom_1.STL')
+        VisuNode.createObject('OglModel', name='visual', src='@loader', color=color, scale3d=scale)
         VisuNode.createObject('IdentityMapping', input='@..', output='@visual')
+        
+        # Collision Node
+        CollNode = node.createChild('Coll')
+        CollNode.createObject('MeshTopology', src="@../loader")
+        CollNode.createObject('MechanicalObject', src='@../loader', name='coll', scale3d=scale, template='Vec3d')
+        CollNode.createObject('TTriangleModel')
+        CollNode.createObject('TLineModel')
+        CollNode.createObject('TPointModel')
+        CollNode.createObject('IdentityMapping', input='@../mecha', output='@coll')
 
         return 0
     
 
     def createGraph(self,rootNode):
         self.rootNode = rootNode
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaOpenglVisual')# SofaCUDA')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython')# SofaOpenglVisual')# SofaCUDA')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels')# showInteractionForceFields showForceFields')
         rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
@@ -103,14 +114,20 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
+        Floor = rootNode.createChild('Floor')
+        self.populateNonMoving(Floor, 'mesh/floor.obj', translation=[0,-18.9,0])
+        self.Floor = Floor
+
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
-        scale=[30, 30, 30]
+        #scale=[30, 30, 30]
+        translation=[-34.35, -17.9, -19.65]
 #        self.populateVec(Phantom, 'meshes/SimpleBeamTetra.msh', mass=1e3, color='green', scale=scale)
-        self.populateVec(Phantom, 'meshes/gel_phantom_1.STL', mass=1e3, color='green')
+        self.populateVec(Phantom, 'meshes/gel_phantom_1.msh', mass=1e3, color='green', translation=translation)
+#        self.populateVec(Phantom, 'meshes/gel_phantom_1.STL', mass=1e3, color='green')
         self.Phantom = Phantom
 
-        # rootNode/Instrument
+#        # rootNode/Instrument
         Instrument = rootNode.createChild('Instrument')
         self.populateRigid(Instrument, 'meshes/cylinder.obj', mass=1e3, color='yellow')
         self.Instrument = Instrument

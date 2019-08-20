@@ -30,9 +30,9 @@ class SpringEnv (Sofa.PythonScriptController):
         node.createObject('MeshSTLLoader', name='loader', filename=filename)
         node.createObject('MeshTopology', src='@loader')
         node.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('TriangleCollisionModel', simulated=0, moving=0)
-        node.createObject('LineCollisionModel', simulated=0, moving=0)
-        node.createObject('PointCollisionModel', simulated=0, moving=0)
+        node.createObject('TTriangleModel', simulated=0, moving=0)
+        node.createObject('TLineModel', simulated=0, moving=0)
+        node.createObject('TPointModel', simulated=0, moving=0)
         node.createObject('OglModel', name='visu', src='@loader', scale3d=scale, translation=translation, rotation=rotation, color=color)
         
 
@@ -56,9 +56,9 @@ class SpringEnv (Sofa.PythonScriptController):
         CollNode = node.createChild('Coll')
         CollNode.createObject('MeshTopology', src="@../loader")
         CollNode.createObject('MechanicalObject', src='@../loader', name='coll', scale3d=scale, template='Vec3d')
-        CollNode.createObject('PointCollisionModel')
-        CollNode.createObject('LineCollisionModel')
-        CollNode.createObject('TriangleCollisionModel')
+        CollNode.createObject('TTriangleModel')
+        CollNode.createObject('TLineModel')
+        CollNode.createObject('TPointModel')
         CollNode.createObject('RigidMapping', input='@../mecha', output='@coll')
 
         return 0
@@ -88,9 +88,9 @@ class SpringEnv (Sofa.PythonScriptController):
         CollNode = node.createChild('Coll_Cyl')
         CollNode.createObject('MeshTopology', src="@../loader")
         CollNode.createObject('MechanicalObject', src='@../loader', scale3d=scale)
-        CollNode.createObject('PointCollisionModel')
-        CollNode.createObject('LineCollisionModel')
-        CollNode.createObject('TriangleCollisionModel')
+        CollNode.createObject('TTriangleModel')
+        CollNode.createObject('TLineModel')
+        CollNode.createObject('TLineModel')
         CollNode.createObject('IdentityMapping')
 
         return 0
@@ -123,7 +123,7 @@ class SpringEnv (Sofa.PythonScriptController):
     
     def createGraph(self,rootNode):
         self.rootNode = rootNode
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaOpenglVisual')# SofaCUDA')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython')# SofaOpenglVisual') SofaCUDA')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels')# showInteractionForceFields showForceFields')
         rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
