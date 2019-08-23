@@ -56,8 +56,7 @@ def arrToStr(a, delimiter=""):
     s = s.replace("\n", "")
     s = s.replace("\t", "")
     s = s.replace("  ", " ")
-    if s[0] is ' ':
-        s = s[1:]
+    s = s.strip()
     if delimiter is not "":
         s = s.replace(' ', delimiter)
         s = s.replace(',,', ',')
