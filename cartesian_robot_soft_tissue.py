@@ -80,7 +80,7 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('HexahedronSetTopologyAlgorithms')
 #        node.createObject('HexahedronModel', src="@loader")
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, rotation=rotation)
-        node.createObject('HexahedronFEMForceField', youngModulus='1e3', poissonRatio='0.3')
+        node.createObject('HexahedronFEMForceField', youngModulus='1e1', poissonRatio='0.44')
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
@@ -120,8 +120,8 @@ class SpringEnv (Sofa.PythonScriptController):
 
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
-        scale=[30, 30, 30]
-        translation=[-34.35/30, -17.9/30, -19.65/30]
+        scale=[22.9, 35.8, 39.3]
+        translation=[-34.35/22.9, -17.9/35.8, -19.65/39.3]
         self.populateVec(Phantom, 'meshes/SimpleBeamHexa_fine.msh', mass=1e3, color='green', scale=scale, translation=translation)
 #        self.populateVec(Phantom, 'meshes/gel_phantom_1.msh', mass=1e3, color='green', translation=translation)
         Phantom.createObject('FixedConstraint', indices=[0,3,12,15,68,17,123,121,21,145,13, 210, 38, 227, 14, 292, 52, 309, 308, 50, 267, 270, 49, 246, 2, 188,35, 164,1, 99, 16, 66, 75, 64, 128, 128, 28, 63, 149, 97, 104, 96, 19, 144, 214, 162, 169, 120, 209, 43, 161, 193, 186, 231, 185, 36, 226, 296, 244, 251, 243, 57, 291, 313, 268, 275])
@@ -130,7 +130,7 @@ class SpringEnv (Sofa.PythonScriptController):
 #        self.populateVec(Phantom, 'meshes/gel_phantom_1.STL', mass=1e3, color='green')
         self.Phantom = Phantom
 
-#        # rootNode/Instrument
+        # rootNode/Instrument
         Instrument = rootNode.createChild('Instrument')
         self.populateRigid(Instrument, 'mesh/sphere.obj', mass=1e3, color='yellow')
         self.Instrument = Instrument
