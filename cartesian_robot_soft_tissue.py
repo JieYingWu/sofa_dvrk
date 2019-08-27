@@ -74,13 +74,13 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('MeshTopology', src='@loader', name='topo')
         elif (filename[-4:] == '.msh'):
             node.createObject('MeshGmshLoader', name='loader', filename=filename, translation=translation)
-            node.createObject('TetrahedronSetTopologyContainer', src='@loader')#, fileTopology='mesh/smCube27.msh')
+            node.createObject('TetrahedronSetTopologyContainer', name='container', src='@loader')#, fileTopology='mesh/smCube27.msh')
             node.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
             node.createObject('TetrahedronSetTopologyModifier')
             node.createObject('TetrahedronSetTopologyAlgorithms')
 #        node.createObject('TetrahedronModel', src="@loader")
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, rotation=rotation)
-        node.createObject('TetrahedronFEMForceField', youngModulus='3e2', poissonRatio='0')
+        node.createObject('TetrahedronFEMForceField', youngModulus='3e2', poissonRatio='0.26')
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
@@ -88,7 +88,7 @@ class SpringEnv (Sofa.PythonScriptController):
         VisuNode = node.createChild('Visu_Cyl')
         VisuNode.createObject('MeshSTLLoader', name='loader', filename='meshes/gel_phantom_1.STL')
         VisuNode.createObject('OglModel', name='visual', src='@loader', color=color, scale3d=scale)
-        VisuNode.createObject('IdentityMapping', input='@..', output='@visual')
+        VisuNode.createObject('IdentityMapping', input='@../mecha', output='@visual')
         
         # Collision Node
         CollNode = node.createChild('Coll')
@@ -104,19 +104,19 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def createGraph(self,rootNode):
         self.rootNode = rootNode
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython')# SofaOpenglVisual')# SofaCUDA')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaExporter')# SofaOpenglVisual')# SofaCUDA')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels')# showInteractionForceFields showForceFields')
         rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)  
         rootNode.createObject('BruteForceDetection')
-        rootNode.createObject('MinProximityIntersection', contactDistance=2, alarmDistance=5)
+        rootNode.createObject('MinProximityIntersection', contactDistance=0.5, alarmDistance=0.5)
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
-        Floor = rootNode.createChild('Floor')
-        self.populateNonMoving(Floor, 'mesh/floor.obj', translation=[0,-18.9,0])
-        self.Floor = Floor
+#        Floor = rootNode.createChild('Floor')
+#        self.populateNonMoving(Floor, 'mesh/floor.obj', translation=[0,-18.9,0])
+#        self.Floor = Floor
 
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
@@ -124,12 +124,15 @@ class SpringEnv (Sofa.PythonScriptController):
         translation=[-34.35, -17.9, -19.65]
 #        self.populateVec(Phantom, 'meshes/SimpleBeamTetra.msh', mass=1e3, color='green', scale=scale)
         self.populateVec(Phantom, 'meshes/gel_phantom_1.msh', mass=1e3, color='green', translation=translation)
+        Phantom.createObject('FixedConstraint', indices=[7,3,5,2])
+        Phantom.createObject('MeshExporter', filename='test/mesh', position='@mecha.position', edges='@container.edges', triangles='@container.triangles', tetras='@container.tetras', exportEveryNumberOfSteps=1, format='gmsh')
+        
 #        self.populateVec(Phantom, 'meshes/gel_phantom_1.STL', mass=1e3, color='green')
         self.Phantom = Phantom
 
 #        # rootNode/Instrument
         Instrument = rootNode.createChild('Instrument')
-        self.populateRigid(Instrument, 'meshes/cylinder.obj', mass=1e3, color='yellow')
+        self.populateRigid(Instrument, 'mesh/sphere.obj', mass=1e3, color='yellow')
         self.Instrument = Instrument
         return 0
 
@@ -174,11 +177,11 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        self.f = open("test/position" + str(self.robot_step) + ".txt","w")
-        pos = np.array(self.Phantom.getObject('mecha').position)
-        self.f.write(str(pos) + '\n')
+#        self.f = open("test/position" + str(self.robot_step) + ".txt","w")
+#        pos = np.array(self.Phantom.getObject('mecha').position)
+#        self.f.write(str(pos) + '\n')
         self.time += self.rootNode.findData('dt').value
-        self.f.close()
+#        self.f.close()
         
         return 0
 
@@ -188,6 +191,8 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def reset(self):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        self.robot_step = 0
+        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         return 0
 
     def onMouseButtonMiddle(self, mouseX,mouseY,isPressed):

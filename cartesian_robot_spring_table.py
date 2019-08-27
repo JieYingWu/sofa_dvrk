@@ -108,7 +108,7 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)  
         rootNode.createObject('BruteForceDetection')
-        rootNode.createObject('MinProximityIntersection', contactDistance=0.2, alarmDistance=0.5)
+        rootNode.createObject('MinProximityIntersection', contactDistance=0.2, alarmDistance=0.2)
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
@@ -270,6 +270,8 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def reset(self):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        self.robot_step = 0
+        self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         return 0
 
     def onMouseButtonMiddle(self, mouseX,mouseY,isPressed):
