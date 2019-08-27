@@ -3,12 +3,15 @@ sys.path.insert(1, '../network')
 
 import math
 import Sofa
-import torch
 import socket
 import numpy as np
 from pathlib import Path
 import geometry_util as geo
-from network import SpringNetwork
+
+use_network = False
+if use_network:
+    import torch
+    from network import SpringNetwork
 
 
 class SpringEnv (Sofa.PythonScriptController):
@@ -19,7 +22,6 @@ class SpringEnv (Sofa.PythonScriptController):
     time = 0
 
     # If using network
-    use_network = True
     input_size = 14
     output_size = 7
     network_path = Path('../network/checkpoints/models/model_80.pt')
@@ -213,7 +215,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def initGraph(self, node):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        if self.use_network:
+        if use_network:
             self.net = SpringNetwork(input_size=self.input_size, output_size=self.output_size)
             # Load previous model if requested
             if self.network_path.exists():
@@ -254,7 +256,7 @@ class SpringEnv (Sofa.PythonScriptController):
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         pos = np.array(self.Tabletop.getObject('mecha').position)
-        if self.use_network:
+        if use_network:
             robot_pos = self.robot_pos[self.robot_step,1:8]
             updated_pos = self.net(torch.tensor(np.append(robot_pos, pos)).float()).detach().numpy()
             self.Tabletop.getObject('mecha').position = geo.arrToStr(updated_pos)

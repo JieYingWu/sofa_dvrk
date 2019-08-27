@@ -74,21 +74,21 @@ class SpringEnv (Sofa.PythonScriptController):
             node.createObject('MeshTopology', src='@loader', name='topo')
         elif (filename[-4:] == '.msh'):
             node.createObject('MeshGmshLoader', name='loader', filename=filename, translation=translation)
-            node.createObject('TetrahedronSetTopologyContainer', name='container', src='@loader')#, fileTopology='mesh/smCube27.msh')
-            node.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
-            node.createObject('TetrahedronSetTopologyModifier')
-            node.createObject('TetrahedronSetTopologyAlgorithms')
-#        node.createObject('TetrahedronModel', src="@loader")
+            node.createObject('HexahedronSetTopologyContainer', name='container', src='@loader')
+            node.createObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
+            node.createObject('HexahedronSetTopologyModifier')
+            node.createObject('HexahedronSetTopologyAlgorithms')
+#        node.createObject('HexahedronModel', src="@loader")
         node.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale, rotation=rotation)
-        node.createObject('TetrahedronFEMForceField', youngModulus='3e2', poissonRatio='0.26')
+        node.createObject('HexahedronFEMForceField', youngModulus='1e3', poissonRatio='0.3')
         node.createObject('UniformMass', totalMass=mass)
         node.createObject('UncoupledConstraintCorrection')
 
         # Visual Node
-        VisuNode = node.createChild('Visu_Cyl')
-        VisuNode.createObject('MeshSTLLoader', name='loader', filename='meshes/gel_phantom_1.STL')
-        VisuNode.createObject('OglModel', name='visual', src='@loader', color=color, scale3d=scale)
-        VisuNode.createObject('IdentityMapping', input='@../mecha', output='@visual')
+        #VisuNode = node.createChild('Visu_Cyl')
+        #VisuNode.createObject('MeshSTLLoader', name='loader', filename='mesh/simpleBeamHexa.msh')
+        #VisuNode.createObject('OglModel', name='visual', src='@loader', color=color, scale3d=scale)
+        #VisuNode.createObject('IdentityMapping', input='@../mecha', output='@visual')
         
         # Collision Node
         CollNode = node.createChild('Coll')
@@ -104,7 +104,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def createGraph(self,rootNode):
         self.rootNode = rootNode
-        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython SofaExporter')# SofaOpenglVisual')# SofaCUDA')
+        rootNode.createObject('RequiredPlugin', pluginName='SofaMiscCollision SofaPython')# SofaOpenglVisual')# SofaCUDA')
         rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels')# showCollisionModels')# showInteractionForceFields showForceFields')
         rootNode.createObject('FreeMotionAnimationLoop', solveVelocityConstraintFirst=0)
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-6, mu=0.9)
@@ -120,12 +120,12 @@ class SpringEnv (Sofa.PythonScriptController):
 
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
-        #scale=[30, 30, 30]
-        translation=[-34.35, -17.9, -19.65]
-#        self.populateVec(Phantom, 'meshes/SimpleBeamTetra.msh', mass=1e3, color='green', scale=scale)
-        self.populateVec(Phantom, 'meshes/gel_phantom_1.msh', mass=1e3, color='green', translation=translation)
-        Phantom.createObject('FixedConstraint', indices=[7,3,5,2])
-        Phantom.createObject('MeshExporter', filename='test/mesh', position='@mecha.position', edges='@container.edges', triangles='@container.triangles', tetras='@container.tetras', exportEveryNumberOfSteps=1, format='gmsh')
+        scale=[30, 30, 30]
+        translation=[-34.35/30, -17.9/30, -19.65/30]
+        self.populateVec(Phantom, 'meshes/SimpleBeamHexa_fine.msh', mass=1e3, color='green', scale=scale, translation=translation)
+#        self.populateVec(Phantom, 'meshes/gel_phantom_1.msh', mass=1e3, color='green', translation=translation)
+        Phantom.createObject('FixedConstraint', indices=[0,3,12,15,68,17,123,121,21,145,13, 210, 38, 227, 14, 292, 52, 309, 308, 50, 267, 270, 49, 246, 2, 188,35, 164,1, 99, 16, 66, 75, 64, 128, 128, 28, 63, 149, 97, 104, 96, 19, 144, 214, 162, 169, 120, 209, 43, 161, 193, 186, 231, 185, 36, 226, 296, 244, 251, 243, 57, 291, 313, 268, 275])
+#        Phantom.createObject('MeshExporter', filename='test/mesh', position='@mecha.position', edges='@container.edges', triangles='@container.triangles', tetras='@container.tetras', exportEveryNumberOfSteps=1, format='gmsh')
         
 #        self.populateVec(Phantom, 'meshes/gel_phantom_1.STL', mass=1e3, color='green')
         self.Phantom = Phantom
@@ -177,11 +177,11 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-#        self.f = open("test/position" + str(self.robot_step) + ".txt","w")
-#        pos = np.array(self.Phantom.getObject('mecha').position)
-#        self.f.write(str(pos) + '\n')
+        self.f = open("test/position" + str(self.robot_step) + ".txt","w")
+        pos = np.array(self.Phantom.getObject('mecha').position)
+        self.f.write(str(pos) + '\n')
         self.time += self.rootNode.findData('dt').value
-#        self.f.close()
+        self.f.close()
         
         return 0
 
