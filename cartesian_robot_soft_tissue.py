@@ -5,16 +5,15 @@ import socket
 import numpy as np
 import geometry_util as geo
 
-time_scale = 5.0
+time_scale = 5
 
 class SpringEnv (Sofa.PythonScriptController):
     robot_step = 0
-    partial_step = 0
+    partial_step = time_scale # Start from full - partial step ranges from 1 to time_scale
     write_step = 0
     step = 0.05
     axis_scale=100
-    time = 0
-
+    
     # Set so the first position is at centre of the platform
     def __init__(self, node, commandLineArguments) : 
         self.count = 0
@@ -24,6 +23,7 @@ class SpringEnv (Sofa.PythonScriptController):
         self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'data0_robot_cartesian_processed.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
+        self.grid_order = np.loadtxt('processing/grid_order.txt').astype(int)
         
     def output(self):
         return
@@ -74,7 +74,7 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('LCPConstraintSolver', maxIt=1000, tolerance=1e-9, mu=0.9)
         rootNode.createObject('DefaultPipeline', depth=5, verbose=0, draw=0)  
         rootNode.createObject('BruteForceDetection')
-        rootNode.createObject('MinProximityIntersection', contactDistance=0.1, alarmDistance=0.1)
+        rootNode.createObject('MinProximityIntersection', contactDistance=0.5, alarmDistance=1)
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
@@ -94,7 +94,7 @@ class SpringEnv (Sofa.PythonScriptController):
         Phantom.createObject('HexahedronSetTopologyModifier')
         Phantom.createObject('HexahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('HexahedronFEMForceField', youngModulus='1e2', poissonRatio='0.44')
+        Phantom.createObject('HexahedronFEMForceField', youngModulus='1e3', poissonRatio='0.1')
         Phantom.createObject('UniformMass', totalMass=1e3)
         Phantom.createObject('UncoupledConstraintCorrection')
 
@@ -166,12 +166,10 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        self.f = open("test/position" + str(self.robot_step) + ".txt","w")
-        pos = np.array(self.Phantom.getObject('mecha').position)
-        self.f.write(str(pos) + '\n')
-        self.time += self.rootNode.findData('dt').value
-        self.f.close()
-        
+        if self.partial_step == time_scale:
+            pos = np.array(self.Phantom.getObject('mecha').position)
+            pos = pos[self.grid_order]
+            np.savetxt("test/position" + str(self.robot_step) + ".txt",pos)
         return 0
 
     def onLoaded(self, node):
@@ -208,7 +206,7 @@ class SpringEnv (Sofa.PythonScriptController):
     def onBeginAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
 
-        if (self.robot_step < self.robot_pos.shape[0]):
+        if (self.robot_step < self.robot_pos.shape[0]-1):
             if (self.partial_step < time_scale):
                 difference = self.robot_pos[self.robot_step+1,1:8] - self.robot_pos[self.robot_step,1:8]
                 update = self.partial_step/time_scale * difference + self.robot_pos[self.robot_step,1:8]
@@ -217,7 +215,7 @@ class SpringEnv (Sofa.PythonScriptController):
             else:
                 self.robot_step += 1
                 self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
-                self.partial_step = 0
+                self.partial_step = 1
         else:
             self.rootNode.getRootContext().animate = False
         return 0

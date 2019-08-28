@@ -16,7 +16,7 @@ scale = 1000
 
 #### For 2019-08-14-GelPhantom1 ####
 # Height is adjusted since we poke into the phantom a little
-height_scale = 0
+height_scale = 0.5
 phantom_points = np.array([[34.35,17.9+height_scale,-19.65], [-34.35,17.9+height_scale,-19.65], [-34.35,17.9+height_scale,19.65], [34.35,17.9+height_scale,19.65]])
 measured_points = np.array([[-0.0796385679491,0.0143042152692,-0.166926943272],[-0.027116819443,0.0448946184372,-0.16551352955],[-0.0426067612174,0.0737392043797,-0.164060336369],[-0.0952109779515,0.0467586154014,-0.161902662597]])*scale
 
