@@ -5,7 +5,7 @@ import socket
 import numpy as np
 import geometry_util as geo
 
-time_scale = 5
+time_scale = 40
 
 class SpringEnv (Sofa.PythonScriptController):
     robot_step = 0
@@ -88,22 +88,27 @@ class SpringEnv (Sofa.PythonScriptController):
         translation=[-34.35/22.9, -17.9/35.8, -19.65/39.3]
         Phantom.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         Phantom.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
-        Phantom.createObject('MeshGmshLoader', name='loader', filename='meshes/SimpleBeamHexa_fine.msh', translation=translation)
-        Phantom.createObject('HexahedronSetTopologyContainer', name='container', src='@loader')
-        Phantom.createObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
-        Phantom.createObject('HexahedronSetTopologyModifier')
-        Phantom.createObject('HexahedronSetTopologyAlgorithms')
+        Phantom.createObject('MeshGmshLoader', name='loader', filename='meshes/SimpleBeamTetra_fine.msh', translation=translation)
+        Phantom.createObject('TetrahedronSetTopologyContainer', name='container', src='@loader')
+        Phantom.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+        Phantom.createObject('TetrahedronSetTopologyModifier')
+        Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('HexahedronFEMForceField', youngModulus='1e3', poissonRatio='0.1')
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e3', poissonRatio='0.1')
         Phantom.createObject('UniformMass', totalMass=1e3)
         Phantom.createObject('UncoupledConstraintCorrection')
 
-        Phantom.createObject('FixedConstraint', indices=[0,3,12,15,68,17,123,121,21,145,13, 210, 38, 227, 14, 292, 52, 309, 308, 50, 267, 270, 49, 246, 2, 188,35, 164,1, 99, 16, 66, 75, 64, 128, 128, 28, 63, 149, 97, 104, 96, 19, 144, 214, 162, 169, 120, 209, 43, 161, 193, 186, 231, 185, 36, 226, 296, 244, 251, 243, 57, 291, 313, 268, 275])
+# This is for SimpleBeamTetra_fine.msh
+        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 338, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
+
+        
+# This is for SimpleBeamHexa_fine.msh
+#        Phantom.createObject('FixedConstraint', indices=[0,3,12,15,68,17,123,121,21,145,13, 210, 38, 227, 14, 292, 52, 309, 308, 50, 267, 270, 49, 246, 2, 188,35, 164,1, 99, 16, 66, 75, 64, 128, 128, 28, 63, 149, 97, 104, 96, 19, 144, 214, 162, 169, 120, 209, 43, 161, 193, 186, 231, 185, 36, 226, 296, 244, 251, 243, 57, 291, 313, 268, 275])
 #        Phantom.createObject('MeshExporter', filename='test/mesh', position='@mecha.position', edges='@container.edges', triangles='@container.triangles', tetras='@container.tetras', exportEveryNumberOfSteps=1, format='gmsh')
         
         # Visual Node
         VisuNode = Phantom.createChild('Visu_Cyl')
-        VisuNode.createObject('MeshSTLLoader', name='loader', filename='meshes/gel_phantom_1_fine.STL')
+        VisuNode.createObject('MeshSTLLoader', name='loader', filename='meshes/gel_phantom_1_fine.stl')
         VisuNode.createObject('OglModel', name='visual', src='@loader', color='yellow')
         VisuNode.createObject('BarycentricMapping', input='@../mecha', output='@visual')
         
@@ -222,7 +227,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
 def createScene(rootNode):
     np.set_printoptions(threshold=sys.maxsize)
-    rootNode.findData('dt').value = 0.01005308/time_scale
+    rootNode.findData('dt').value = 0.0465/time_scale
     rootNode.findData('gravity').value = '0 0 0'
     try : 
         sys.argv[0]
