@@ -77,11 +77,11 @@ class SpringEnv (Sofa.PythonScriptController):
 
         return 0    
     
-    def populateSpring(self, spring, translation, rotation, color='gray'):
+    def populateSpring(self, spring, length, translation, rotation, color='gray'):
 #        index = [29575, 29040, 29597]
         spring.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         spring.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='30')
-        spring.createObject('CylinderGridTopology', nx='3', ny='3', length='20.26', radius='0.425', nz='2', axis='1 0 0', name='topo')
+        spring.createObject('CylinderGridTopology', nx='3', ny='3', length=length, radius='0.425', nz='2', axis='1 0 0', name='topo')
         spring.createObject('MechanicalObject', src='@topo', template='Vec3d', name='spring', rotation=rotation, translation=translation)
 #        spring.createObject('TriangularFEMForceFieldOptim', youngModulus='1e3', poissonRatio='0.49')
 #        spring.createObject('FastTriangularBendingSprings', bendingStiffness='10000')
@@ -154,14 +154,14 @@ class SpringEnv (Sofa.PythonScriptController):
         self.Tabletop = Tabletop
 
         # rootNode/Spring0
-        offset = tableWidth/2+14
-        springAngle = 25
-        springLength = 21.26 # Should be 20.26 in resting position
-        springHeight = tableHeight + 2
+        offset = tableWidth/2+18
+        springAngle = 26.5
+        springLength = 25 # Should be 20.26 in resting position
+        springHeight = tableHeight + 3
         translation = [-offset, springHeight, 0]
         rotation = [0, 0, -springAngle]
         Spring0 = rootNode.createChild('Spring0')
-        self.populateSpring(Spring0, translation, rotation)
+        self.populateSpring(Spring0, springLength, translation, rotation)
         self.Spring0 = Spring0
 
         # rootNode/Spring1
@@ -169,32 +169,36 @@ class SpringEnv (Sofa.PythonScriptController):
         # Euler angle in XYZ form
         rotation = [-90, 270-springAngle, 90]
         Spring1 = rootNode.createChild('Spring1')
-        self.populateSpring(Spring1, translation, rotation, color='red')
+        self.populateSpring(Spring1, springLength, translation, rotation, color='red')
         self.Spring1 = Spring1
 
         # rootNode/Spring2
         translation=[offset, springHeight, 0]
         rotation = [0, 0, 180+springAngle]
         Spring2 = rootNode.createChild('Spring2')
-        self.populateSpring(Spring2, translation, rotation, color='yellow')
+        self.populateSpring(Spring2, springLength, translation, rotation, color='yellow')
         self.Spring2 = Spring2
 
         # rootNode/Spring3
         translation=[0, springHeight, offset]
         rotation = [90, 90+springAngle, 90]
         Spring3 = rootNode.createChild('Spring3')
-        self.populateSpring(Spring3, translation, rotation, color='blue')
+        self.populateSpring(Spring3, springLength, translation, rotation, color='blue')
         self.Spring3 = Spring3
  
-        # rootNode.createObject('AttachConstraint', name='ac0', object1='@Tabletop/Coll_Cyl', object2='@Spring0', twoWay='true', indices1='607 599 600 604 609', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1', template='Vec3d')
-        # rootNode.createObject('AttachConstraint', name='ac1', object1='@Tabletop/Coll_Cyl', object2='@Spring1', twoWay='true', indices1='633 625 626 630 635', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1', template='Vec3d')
-        # rootNode.createObject('AttachConstraint', name='ac2', object1='@Tabletop/Coll_Cyl', object2='@Spring2', twoWay='true', indices1='620 612 613 617 622', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1', template='Vec3d')
-        # rootNode.createObject('AttachConstraint', name='ac3', object1='@Tabletop/Coll_Cyl', object2='@Spring3', twoWay='true', indices1='594 586 587 591 596', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1', template='Vec3d')
+#        rootNode.createObject('AttachConstraint', name='ac0', object1='@Tabletop/Coll_Cyl', object2='@Spring0', twoWay='true', indices1='193 242 238 232 591', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1')
+#        rootNode.createObject('AttachConstraint', name='ac1', object1='@Tabletop/Coll_Cyl', object2='@Spring1', twoWay='true', indices1='633 625 626 630 635', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1', template='Vec3d')
+#        rootNode.createObject('AttachConstraint', name='ac2', object1='@Tabletop/Coll_Cyl', object2='@Spring2', twoWay='true', indices1='620 612 613 617 622', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1', template='Vec3d')
+#        rootNode.createObject('AttachConstraint', name='ac3', object1='@Tabletop/Coll_Cyl', object2='@Spring3', twoWay='true', indices1='594 586 587 591 596', indices2='10 13 16 12 14', constraintFactor='1 1 1 1 1', template='Vec3d')
 
-        rootNode.createObject('BoxStiffSpringForceField', name='ff0', template='Vec3d', stiffness=1e5, object1='@Spring0', object2='@Tabletop/Coll', box_object1='-60 60 -1 -40 70 1', box_object2='-50 60 -1 -40 70 1', forceOldBehavior='false')
-        rootNode.createObject('BoxStiffSpringForceField', name='ff1',  template='Vec3d', stiffness=1e5, object1='@Spring1', object2='@Tabletop/Coll', box_object1='-1 60 -60 1 70 -40', box_object2='-1 60 -50 1 70 -40', forceOldBehavior='false')
-        rootNode.createObject('BoxStiffSpringForceField', name='ff2',  template='Vec3d', stiffness=1e5, object1='@Spring2', object2='@Tabletop/Coll', box_object1='40 60 -1 60 70 1', box_object2='40 60 -1 50 70 1', forceOldBehavior='false')
-        rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e5, object1='@Spring3', object2='@Tabletop/Coll', box_object1='-1 60 40 1 70 60', box_object2='-1 60 40 1 70 50', forceOldBehavior='false')
+#        rootNode.createObject('BoxStiffSpringForceField', name='ff0', template='Vec3d', stiffness=1e8, object1='@Spring0', object2='@Tabletop/Coll', box_object1='-60 60 -1 -40 70 1', box_object2='-50 60 -1 -40 70 1', forceOldBehavior='false')
+#        rootNode.createObject('BoxStiffSpringForceField', name='ff1',  template='Vec3d', stiffness=1e8, object1='@Spring1', object2='@Tabletop/Coll', box_object1='-1 60 -60 1 70 -40', box_object2='-1 60 -50 1 70 -40', forceOldBehavior='false')
+#        rootNode.createObject('BoxStiffSpringForceField', name='ff2',  template='Vec3d', stiffness=1e8, object1='@Spring2', object2='@Tabletop/Coll', box_object1='40 60 -1 60 70 1', box_object2='40 60 -1 50 70 1', forceOldBehavior='false')
+#        rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e8, object1='@Spring3', object2='@Tabletop/Coll', box_object1='-1 60 40 1 70 60', box_object2='-1 60 40 1 70 50', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff0', template='Vec3d', stiffness=1e8, damping=20, object1='@Support0', object2='@Tabletop/Coll', box_object1='-80 70 -10 -50 100 10', box_object2='-50 60 -1 -40 70 1', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff1',  template='Vec3d', stiffness=1e8, damping=20,  object1='@Support1', object2='@Tabletop/Coll', box_object1='-10 70 -80 10 100 -50', box_object2='-1 60 -50 1 70 -40', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff2',  template='Vec3d', stiffness=1e8, damping=20,  object1='@Support2', object2='@Tabletop/Coll', box_object1='50 70 -10 80 100 10', box_object2='40 60 -1 50 70 1', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e8, damping=20,  object1='@Support3', object2='@Tabletop/Coll', box_object1='-10 70 50 10 100 80', box_object2='-1 60 40 1 70 50', forceOldBehavior='false')
 
         # rootNode/Instrument
         Instrument = rootNode.createChild('Instrument')
