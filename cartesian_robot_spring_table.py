@@ -87,7 +87,7 @@ class SpringEnv (Sofa.PythonScriptController):
 #        spring.createObject('FastTriangularBendingSprings', bendingStiffness='10000')
         #        spring.createObject('TriangularFEMForceField', youngModulus='1e3', poissonRatio='0.45')
 #        spring.createObject('RestShapeSpringsForceField', stiffness=200)
-        spring.createObject('TetrahedronFEMForceField', youngModulus='1e1', poissonRatio='0.45')
+        spring.createObject('TetrahedronFEMForceField', youngModulus='0.006935', poissonRatio='0.45')
 #        spring.createObject('MeshSpringForceField', stiffness='1e4', damping='2')
 #        spring.createObject('TriangularBendingSprings', youngModulus=5e4, poissonRatio=0.1)
 #        spring.createObject('RegularGridSpringForceField', stiffness='1e4', damping='1.0')

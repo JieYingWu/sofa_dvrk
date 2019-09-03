@@ -5,7 +5,7 @@ import socket
 import numpy as np
 import geometry_util as geo
 
-time_scale = 40
+time_scale = 100
 
 class SpringEnv (Sofa.PythonScriptController):
     robot_step = 0
@@ -20,10 +20,10 @@ class SpringEnv (Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
-        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'data0_robot_cartesian_processed.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'data0_robot_cartesian_processed_interpolated.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
-        self.grid_order = np.loadtxt('processing/grid_order.txt').astype(int)
+#        self.grid_order = np.loadtxt('grid_order.txt').astype(int)
         
     def output(self):
         return
@@ -173,7 +173,7 @@ class SpringEnv (Sofa.PythonScriptController):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         if self.partial_step == time_scale:
             pos = np.array(self.Phantom.getObject('mecha').position)
-            pos = pos[self.grid_order]
+#            pos = pos[self.grid_order]
             np.savetxt("test/position" + str(self.robot_step) + ".txt",pos)
         return 0
 
