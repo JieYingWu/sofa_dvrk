@@ -195,10 +195,10 @@ class SpringEnv (Sofa.PythonScriptController):
 #        rootNode.createObject('BoxStiffSpringForceField', name='ff1',  template='Vec3d', stiffness=1e8, object1='@Spring1', object2='@Tabletop/Coll', box_object1='-1 60 -60 1 70 -40', box_object2='-1 60 -50 1 70 -40', forceOldBehavior='false')
 #        rootNode.createObject('BoxStiffSpringForceField', name='ff2',  template='Vec3d', stiffness=1e8, object1='@Spring2', object2='@Tabletop/Coll', box_object1='40 60 -1 60 70 1', box_object2='40 60 -1 50 70 1', forceOldBehavior='false')
 #        rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e8, object1='@Spring3', object2='@Tabletop/Coll', box_object1='-1 60 40 1 70 60', box_object2='-1 60 40 1 70 50', forceOldBehavior='false')
-        rootNode.createObject('BoxStiffSpringForceField', name='ff0', template='Vec3d', stiffness=1e8, damping=20, object1='@Support0', object2='@Tabletop/Coll', box_object1='-80 70 -10 -50 100 10', box_object2='-50 60 -1 -40 70 1', forceOldBehavior='false')
-        rootNode.createObject('BoxStiffSpringForceField', name='ff1',  template='Vec3d', stiffness=1e8, damping=20,  object1='@Support1', object2='@Tabletop/Coll', box_object1='-10 70 -80 10 100 -50', box_object2='-1 60 -50 1 70 -40', forceOldBehavior='false')
-        rootNode.createObject('BoxStiffSpringForceField', name='ff2',  template='Vec3d', stiffness=1e8, damping=20,  object1='@Support2', object2='@Tabletop/Coll', box_object1='50 70 -10 80 100 10', box_object2='40 60 -1 50 70 1', forceOldBehavior='false')
-        rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e8, damping=20,  object1='@Support3', object2='@Tabletop/Coll', box_object1='-10 70 50 10 100 80', box_object2='-1 60 40 1 70 50', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff0', template='Vec3d', stiffness=1e20, damping=20, object1='@Support0', object2='@Tabletop/Coll', box_object1='-80 70 -10 -50 100 10', box_object2='-50 60 -1 -40 70 1', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff1',  template='Vec3d', stiffness=1e20, damping=20,  object1='@Support1', object2='@Tabletop/Coll', box_object1='-10 70 -80 10 100 -50', box_object2='-1 60 -50 1 70 -40', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff2',  template='Vec3d', stiffness=1e20, damping=20,  object1='@Support2', object2='@Tabletop/Coll', box_object1='50 70 -10 80 100 10', box_object2='40 60 -1 50 70 1', forceOldBehavior='false')
+        rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e20, damping=20,  object1='@Support3', object2='@Tabletop/Coll', box_object1='-10 70 50 10 100 80', box_object2='-1 60 40 1 70 50', forceOldBehavior='false')
 
         # rootNode/Instrument
         Instrument = rootNode.createChild('Instrument')
