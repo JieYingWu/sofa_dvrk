@@ -5,7 +5,10 @@ import socket
 import numpy as np
 import geometry_util as geo
 
-time_scale = 100
+time_scale = 500
+# Average from rosbags (time/# messages)
+all_time_steps = [0.0465, 0.0491, 0.0498, 0.0485, 0.0492, 0.0494, 0.0678, 0.0620, 0.0510, 0.0521, 0.0606, 0.0597] 
+data_file = 10
 
 class SpringEnv (Sofa.PythonScriptController):
     robot_step = 0
@@ -20,10 +23,10 @@ class SpringEnv (Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
-        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/' + 'data0_robot_cartesian_processed_interpolated.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/data' + str(data_file)  + '_robot_cartesian_processed_interpolated.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
-#        self.grid_order = np.loadtxt('grid_order.txt').astype(int)
+        self.grid_order = np.loadtxt('grid_order.txt').astype(int)
         
     def output(self):
         return
@@ -94,7 +97,7 @@ class SpringEnv (Sofa.PythonScriptController):
         Phantom.createObject('TetrahedronSetTopologyModifier')
         Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e3', poissonRatio='0.1')
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e4', poissonRatio='0.1')
         Phantom.createObject('UniformMass', totalMass=1e3)
         Phantom.createObject('UncoupledConstraintCorrection')
 
@@ -173,8 +176,8 @@ class SpringEnv (Sofa.PythonScriptController):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         if self.partial_step == time_scale:
             pos = np.array(self.Phantom.getObject('mecha').position)
-#            pos = pos[self.grid_order]
-            np.savetxt("test/position" + str(self.robot_step) + ".txt",pos)
+            pos = pos[self.grid_order]
+            np.savetxt("data" + str(data_file) + "/position" + str(self.robot_step) + ".txt",pos)
         return 0
 
     def onLoaded(self, node):
@@ -227,7 +230,7 @@ class SpringEnv (Sofa.PythonScriptController):
 
 def createScene(rootNode):
     np.set_printoptions(threshold=sys.maxsize)
-    rootNode.findData('dt').value = 0.0465/time_scale
+    rootNode.findData('dt').value = all_time_steps[data_file]/time_scale
     rootNode.findData('gravity').value = '0 0 0'
     try : 
         sys.argv[0]
