@@ -5,14 +5,14 @@ import socket
 import numpy as np
 import geometry_util as geo
 
-time_scale = 500
+time_scale = 500.0
 # Average from rosbags (time/# messages)
-all_time_steps = [0.0465, 0.0491, 0.0498, 0.0485, 0.0492, 0.0494, 0.0678, 0.0620, 0.0510, 0.0521, 0.0606, 0.0597] 
-data_file = 10
+all_time_steps = [0.0452, 0.0442, 0.0441, 0.0435, 0.0445, 0.0438, 0.0443, 0.0398, 0.0423, 0.0389, 0.0415, 0.0426] 
+data_file = 5
 
 class SpringEnv (Sofa.PythonScriptController):
     robot_step = 0
-    partial_step = time_scale # Start from full - partial step ranges from 1 to time_scale
+    partial_step = float(time_scale) # Start from full - partial step ranges from 1 to time_scale
     write_step = 0
     step = 0.05
     axis_scale=100
@@ -23,51 +23,13 @@ class SpringEnv (Sofa.PythonScriptController):
         self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))        
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
-        self.robot_pos = np.genfromtxt('../dataset/2019-08-14-GelPhantom1/dvrk/data' + str(data_file)  + '_robot_cartesian_processed_interpolated.csv', delimiter=',')
+        self.robot_pos = np.genfromtxt('../dataset/2019-09-07-GelPhantom1/dvrk/data' + str(data_file)  + '_robot_cartesian_processed_interpolated.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
         self.grid_order = np.loadtxt('grid_order.txt').astype(int)
         
     def output(self):
         return
-
-
-    def populateNonMoving(self, node, filename, translation=[0, 0, 0], rotation=[0, 0, 0], scale=[1, 1, 1], mass=1.0, color='red'):
-        node.createObject('MeshObjLoader', name='loader', filename=filename)
-        node.createObject('MeshTopology', src='@loader')
-        node.createObject('MechanicalObject', name='mecha', src='@loader', scale3d=scale, translation=translation, rotation=rotation)
-        node.createObject('TTriangleModel', simulated=0, moving=0)
-        node.createObject('TLineModel', simulated=0, moving=0)
-        node.createObject('TPointModel', simulated=0, moving=0)
-        node.createObject('OglModel', name='visu', src='@loader', scale3d=scale, translation=translation, rotation=rotation, color=color)
-        
-
-    def populateRigid(self, node, filename, position=[0,0,0,0,0,0,1], scale=[1, 1, 1], mass=1.0, color='red'):
-        node.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
-        node.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
-        if (filename[-4:] == '.obj'):
-            node.createObject('MeshObjLoader', name='loader', filename=filename)
-        elif (filename[-4:] == '.STL' or filename[-4:] == '.stl'):
-            node.createObject('MeshSTLLoader', name='loader', filename=filename)
-        node.createObject('MechanicalObject', name='mecha', template='Rigid3d', scale3d=scale, position=position)
-        node.createObject('UniformMass', totalMass=mass)#, showAxisSizeFactor=str(self.axis_scale))
-        node.createObject('UncoupledConstraintCorrection')
-
-        # Visual Node
-        VisuNode = node.createChild('Visu')
-        VisuNode.createObject('OglModel', name='visual', src='@../loader', color=color, scale3d=scale)
-        VisuNode.createObject('RigidMapping', input='@../mecha', output='@visual')
-
-        # Collision Node
-        CollNode = node.createChild('Coll')
-        CollNode.createObject('MeshTopology', src="@../loader")
-        CollNode.createObject('MechanicalObject', src='@../loader', name='coll', scale3d=scale, template='Vec3d')
-        CollNode.createObject('TTriangleModel')
-        CollNode.createObject('TLineModel')
-        CollNode.createObject('TPointModel')
-        CollNode.createObject('RigidMapping', input='@../mecha', output='@coll')
-
-        return 0
 
     def createGraph(self,rootNode):
         self.rootNode = rootNode
@@ -81,28 +43,38 @@ class SpringEnv (Sofa.PythonScriptController):
         rootNode.createObject('DiscreteIntersection')
         rootNode.createObject('DefaultContactManager', name='Response', response='FrictionContact')
 
-#        Floor = rootNode.createChild('Floor')
-#        self.populateNonMoving(Floor, 'mesh/floor.obj', translation=[0,-18.9,0])
-#        self.Floor = Floor
-
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
         scale=[22.9, 35.8, 39.3]
         translation=[-34.35/22.9, -17.9/35.8, -19.65/39.3]
         Phantom.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         Phantom.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
-        Phantom.createObject('MeshGmshLoader', name='loader', filename='meshes/SimpleBeamTetra_fine.msh', translation=translation)
+        Phantom.createObject('MeshGmshLoader', name='loader', filename='meshes/SimpleBeamTetra_fine2.msh', translation=translation)
         Phantom.createObject('TetrahedronSetTopologyContainer', name='container', src='@loader')
         Phantom.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
         Phantom.createObject('TetrahedronSetTopologyModifier')
         Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e4', poissonRatio='0.1')
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e2', poissonRatio='0.44')
         Phantom.createObject('UniformMass', totalMass=1e3)
         Phantom.createObject('UncoupledConstraintCorrection')
 
 # This is for SimpleBeamTetra_fine.msh
-        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 338, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
+#        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 338, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
+
+# This is for SimpleBeamTetra_fine2.msh
+        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200,                                                    43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59,
+                                                         571, 580, 616, 608, 1171, 1180, 1216, 1208, 1719, 1728, 1764, 1756,
+                                                         492, 487, 572, 582, 581, 615, 617, 606, 603, 1089, 1172, 1182, 1181, 1215, 1217, 1206, 1203, 1637, 1720, 1730, 1729, 1763, 1765, 1754, 1751,
+                                                         490, 574, 645, 611, 1092, 1174, 1245, 1211, 1640, 1722, 1793, 1759,
+                                                         500, 501, 495, 493, 576, 644, 641, 610, 609, 1101, 1096, 1094, 1176, 1244, 1241, 1210, 1209, 1649, 1644, 1642, 1724, 1792, 1789, 1758, 1757,
+                                                         499, 494, 558, 561, 1100, 1095, 1158, 1161, 1706, 1709,
+                                                         464, 465, 553, 552, 478, 559, 563, 562, 1067, 1153, 1152, 1079, 1159, 1163, 1162, 1615, 1643, 1700, 1627, 1628, 1707, 1711, 1710,
+                                                         466, 551, 479, 555, 1068, 1151, 1081, 1155, 1616, 1699, 1629, 1703,
+                                                         455, 456, 458, 460, 474, 475, 471, 473, 557, 1059, 1061, 1063, 1076, 1077, 1073, 1075, 1157, 1607, 1609, 1611, 1624, 1625, 1621, 1623, 1705,
+                                                         326, 343, 388, 380, 930, 947, 992, 984, 1478, 1495, 1540, 1532,
+                                                         477, 1701, 1080, 1648
+                                                         ])
 
         
 # This is for SimpleBeamHexa_fine.msh
@@ -123,13 +95,31 @@ class SpringEnv (Sofa.PythonScriptController):
         CollNode.createObject('TLineModel')
         CollNode.createObject('TPointModel')
         CollNode.createObject('IdentityMapping', input='@../mecha', output='@coll')
-        
-#        self.populateVec(Phantom, 'meshes/gel_phantom_1.STL', mass=1e3, color='green')
         self.Phantom = Phantom
 
         # rootNode/Instrument
         Instrument = rootNode.createChild('Instrument')
-        self.populateRigid(Instrument, 'mesh/sphere.obj', mass=1e3, color='gray')
+        Instrument.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
+        Instrument.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
+        Instrument.createObject('MeshObjLoader', name='loader', filename='mesh/sphere.obj')
+        Instrument.createObject('MechanicalObject', name='mecha', template='Rigid3d')
+        Instrument.createObject('UniformMass', totalMass=1e3)#, showAxisSizeFactor=str(self.axis_scale))
+        Instrument.createObject('UncoupledConstraintCorrection')
+
+        # Visual Node
+        VisuNode = Instrument.createChild('Visu')
+        VisuNode.createObject('OglModel', name='visual', src='@../loader')
+        VisuNode.createObject('RigidMapping', input='@../mecha', output='@visual')
+
+        # Collision Node
+        CollNode = Instrument.createChild('Coll')
+        CollNode.createObject('MeshTopology', src="@../loader")
+        CollNode.createObject('MechanicalObject', src='@../loader', name='coll', template='Vec3d')
+        CollNode.createObject('TTriangleModel')
+        CollNode.createObject('TLineModel')
+        CollNode.createObject('TPointModel')
+        CollNode.createObject('RigidMapping', input='@../mecha', output='@coll')
+
         self.Instrument = Instrument
         return 0
 
@@ -217,8 +207,8 @@ class SpringEnv (Sofa.PythonScriptController):
         if (self.robot_step < self.robot_pos.shape[0]-1):
             if (self.partial_step < time_scale):
                 difference = self.robot_pos[self.robot_step+1,1:8] - self.robot_pos[self.robot_step,1:8]
-                update = self.partial_step/time_scale * difference + self.robot_pos[self.robot_step,1:8]
-                self.Instrument.getObject('mecha').position = geo.arrToStr(update)
+                update = float(self.partial_step/time_scale) * difference + self.robot_pos[self.robot_step,1:8]
+                self.Instrument.getObject('mecha').position = geo.arrToStr(update)                
                 self.partial_step += 1
             else:
                 self.robot_step += 1
