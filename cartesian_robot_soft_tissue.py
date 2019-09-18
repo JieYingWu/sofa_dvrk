@@ -3,19 +3,33 @@ import math
 import Sofa
 import socket
 import numpy as np
+from pathlib import Path
 import geometry_util as geo
+
+use_network = True
+if use_network:
+    import torch
+    sys.path.insert(0,'../network/deformable/')
+    from model import UNet3D
 
 time_scale = 500.0
 # Average from rosbags (time/# messages)
 all_time_steps = [0.0452, 0.0442, 0.0441, 0.0435, 0.0445, 0.0438, 0.0443, 0.0398, 0.0423, 0.0389, 0.0415, 0.0426] 
-data_file = 5
+data_file = 9
 
-class SpringEnv (Sofa.PythonScriptController):
+class MeshEnv (Sofa.PythonScriptController):
     robot_step = 0
     partial_step = float(time_scale) # Start from full - partial step ranges from 1 to time_scale
     write_step = 0
     step = 0.05
     axis_scale=100
+
+    # If using network
+    if use_network:
+        in_channels = 3
+        out_channels = 3
+        network_path = Path('../network/deformable/checkpoints/2019-09-17-models/model_70.pt')
+        device = torch.device('cuda')
     
     # Set so the first position is at centre of the platform
     def __init__(self, node, commandLineArguments) : 
@@ -55,8 +69,8 @@ class SpringEnv (Sofa.PythonScriptController):
         Phantom.createObject('TetrahedronSetTopologyModifier')
         Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e2', poissonRatio='0.44')
-        Phantom.createObject('UniformMass', totalMass=1e3)
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e0', poissonRatio='0.44')
+        Phantom.createObject('UniformMass', totalMass=104.1)
         Phantom.createObject('UncoupledConstraintCorrection')
 
 # This is for SimpleBeamTetra_fine.msh
@@ -136,6 +150,18 @@ class SpringEnv (Sofa.PythonScriptController):
 
     def initGraph(self, node):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        if use_network:
+            self.net = UNet3D(in_channels=self.in_channels, out_channels=self.out_channels)
+            # Load previous model if requested
+            if self.network_path.exists():
+                state = torch.load(str(self.network_path))
+                self.net.load_state_dict(state['model'])
+                self.net = self.net.to(self.device)
+                print('Restored model')
+            else:
+                print('Failed to restore model')
+                exit()
+            self.net.eval()
         return 0
 
     # Note: Hold control when key is pressed
@@ -163,7 +189,15 @@ class SpringEnv (Sofa.PythonScriptController):
         return 0
 
     def onEndAnimationStep(self, deltaTime):
-        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+        ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py        
+        if use_network:
+            difference = self.robot_pos[self.robot_step,1:8] - self.robot_pos[self.robot_step-1,1:8]
+            robot_pos = torch.tensor(float(self.partial_step-1/time_scale) * difference + self.robot_pos[self.robot_step,1:8]).to(self.device)
+            pos = torch.tensor(self.Phantom.getObject('mecha').position).to(self.device).float()
+            robot_pos = robot_pos.unsqueeze(0).float()
+            pos = pos.reshape(25, 9, 9, 3)
+            pos = pos.permute(3, 0, 1, 2).unsqueeze(0)
+            network_pos = self.net(torch.tensor(robot_pos), torch.tensor(pos))
         if self.partial_step == time_scale:
             pos = np.array(self.Phantom.getObject('mecha').position)
             pos = pos[self.grid_order]
@@ -208,7 +242,7 @@ class SpringEnv (Sofa.PythonScriptController):
             if (self.partial_step < time_scale):
                 difference = self.robot_pos[self.robot_step+1,1:8] - self.robot_pos[self.robot_step,1:8]
                 update = float(self.partial_step/time_scale) * difference + self.robot_pos[self.robot_step,1:8]
-                self.Instrument.getObject('mecha').position = geo.arrToStr(update)                
+                self.Instrument.getObject('mecha').position = geo.arrToStr(update)
                 self.partial_step += 1
             else:
                 self.robot_step += 1
@@ -228,6 +262,6 @@ def createScene(rootNode):
         commandLineArguments = []
     else :
         commandLineArguments = sys.argv
-    my_env = SpringEnv(rootNode,commandLineArguments)
+    my_env = MeshEnv(rootNode,commandLineArguments)
     
     return 0

@@ -13,6 +13,7 @@ if use_network:
     import torch
     from network import SpringNetwork
 
+time_scale = 10.0
 dataset = 'data0'
     
 class SpringEnv (Sofa.PythonScriptController):
@@ -21,6 +22,8 @@ class SpringEnv (Sofa.PythonScriptController):
     step = 0.05
     axis_scale=100
     time = 0
+    partial_step = float(time_scale) # Start from full - partial step ranges from 1 to time_scale
+
 
     # If using network
     input_size = 14
@@ -89,7 +92,7 @@ class SpringEnv (Sofa.PythonScriptController):
 #        spring.createObject('RestShapeSpringsForceField', stiffness=2e4)
         #'0.006935'
 #        spring.createObject('TetrahedronFEMForceField', youngModulus='6e5', poissonRatio='0.3', method='large', updateStiffnessMatrix='false', printLog='0')
-        spring.createObject('MeshSpringForceField', stiffness='1e10', damping='100')
+        spring.createObject('MeshSpringForceField', stiffness='1e10', damping='1')
 #        spring.createObject('TriangularBendingSprings', youngModulus=5e4, poissonRatio=0.1)
 #        spring.createObject('RegularGridSpringForceField', stiffness='9.82188203', damping='50.0')
         spring.createObject('UniformMass', totalMass=5.0)
@@ -206,9 +209,9 @@ class SpringEnv (Sofa.PythonScriptController):
         # rootNode.createObject('BoxStiffSpringForceField', name='ff3',  template='Vec3d', stiffness=1e20, damping=20, object1='@Support3', object2='@Tabletop/Coll', box_object1='-1 78 59 1 80 60', box_object2='-1 63 43 1 65 41', forceOldBehavior=0)
 
         # rootNode/Instrument
-#        Instrument = rootNode.createChild('Instrument')
-#        self.populateRigid(Instrument, 'mesh/sphere.obj', mass=1e3, color='yellow')
-#        self.Instrument = Instrument
+        Instrument = rootNode.createChild('Instrument')
+        self.populateRigid(Instrument, 'mesh/sphere.obj', mass=1e3, color='yellow')
+        self.Instrument = Instrument
         return 0
 
     def onMouseButtonLeft(self, mouseX,mouseY,isPressed):
@@ -270,7 +273,7 @@ class SpringEnv (Sofa.PythonScriptController):
            updated_pos = self.net(torch.tensor(np.append(robot_pos, pos)).float()).detach().numpy()
            self.Tabletop.getObject('mecha').position = geo.arrToStr(updated_pos)
        self.f.write(str(self.time) + ',' +  geo.arrToStr(pos, delimiter=',') + '\n')
-       self.robot_step += 1
+#       self.robot_step += 1
        self.time += self.rootNode.findData('dt').value
         
        return 0
@@ -311,15 +314,24 @@ class SpringEnv (Sofa.PythonScriptController):
     def onBeginAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
 
-#        if (self.robot_step < self.robot_pos.shape[0]):
-#            self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
-#        else:
-#            self.f.flush()
-#            self.rootNode.getRootContext().animate = False
+        if (self.robot_step < self.robot_pos.shape[0]-1):
+            if (self.partial_step < time_scale):
+                difference = self.robot_pos[self.robot_step+1,1:8] - self.robot_pos[self.robot_step,1:8]
+                update = float(self.partial_step/time_scale) * difference + self.robot_pos[self.robot_step,1:8]
+                self.Instrument.getObject('mecha').position = geo.arrToStr(update)                
+                self.partial_step += 1
+            else:
+                self.robot_step += 1
+                self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
+                self.partial_step = 1
+        else:
+            self.f.flush()
+            self.rootNode.getRootContext().animate = False
         return 0
 
+    
 def createScene(rootNode):
-    rootNode.findData('dt').value = '0.01005308'
+    rootNode.findData('dt').value = 0.01005308/time_scale
     rootNode.findData('gravity').value = '0 0 0'
     try : 
         sys.argv[0]
