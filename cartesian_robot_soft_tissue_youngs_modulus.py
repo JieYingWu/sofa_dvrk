@@ -7,7 +7,7 @@ from pathlib import Path
 import geometry_util as geo
 
 
-youngsModulus = '1e5'
+youngsModulus = '5e4'
 time_scale = 40.0
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
 all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473] 
@@ -60,7 +60,7 @@ class MeshEnv (Sofa.PythonScriptController):
         Phantom.createObject('TetrahedronSetTopologyModifier')
         Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e3', poissonRatio='0.44')
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus=youngsModulus, poissonRatio='0.44')
         Phantom.createObject('UniformMass', totalMass=104.1)
         Phantom.createObject('UncoupledConstraintCorrection')
 

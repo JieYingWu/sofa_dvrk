@@ -12,7 +12,7 @@ if use_network:
     sys.path.insert(0,'../network/deformable/')
     from model import UNet3D
 
-time_scale = 150.0
+time_scale = 200.0
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
 all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473] 
 data_file = 11
@@ -60,25 +60,40 @@ class MeshEnv (Sofa.PythonScriptController):
 
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
-        scale=[22.9, 35.8, 39.3]
-        translation=[-34.35/22.9, -17.9/35.8, -19.65/39.3]
+#        scale=[22.9, 35.8, 39.3]
+#        translation=[-34.35/22.9, -17.9/35.8, -19.65/39.3]
         Phantom.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         Phantom.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
-        Phantom.createObject('MeshGmshLoader', name='loader', filename='meshes/SimpleBeamTetra_fine.msh', translation=translation)
-        Phantom.createObject('TetrahedronSetTopologyContainer', name='container', src='@loader')
-        Phantom.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
-        Phantom.createObject('TetrahedronSetTopologyModifier')
-        Phantom.createObject('TetrahedronSetTopologyAlgorithms')
-        Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e3', poissonRatio='0.44')
+#        Phantom.createObject('MeshGmshLoader', name='loader', filename='meshes/test1.msh')
+        Phantom.createObject('RegularGrid', name='grid', n='20 10 11', min='-34.35 -17.9 -18.65', max='34.35 17.9 18.65')
+        Phantom.createObject('HexahedronSetTopologyContainer', name='container', src='@grid')
+        Phantom.createObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
+        Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d')
+        Phantom.createObject('HexahedronFEMForceField', youngModulus='5e3', poissonRatio='0.44')
         Phantom.createObject('UniformMass', totalMass=104.1)
         Phantom.createObject('UncoupledConstraintCorrection')
 
 # This is for SimpleBeamTetra_fine.msh
-        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
+#        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
+
+
+# For sofa-created mesh        
+        Phantom.createObject('FixedConstraint', indices=[
+                                                         2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
+                                                         1800, 1801, 1802, 1803, 1804, 1805, 1806, 1807, 1808, 1809, 1810, 1811, 1812, 1813, 1814, 1815, 1816, 1817, 1818, 1819,
+                                                         1600, 1601, 1602, 1603, 1604, 1605, 1606, 1607, 1608, 1609, 1610, 1611, 1612, 1613, 1614, 1615, 1616, 1617, 1618, 1619,
+                                                         1400, 1401, 1402, 1403, 1404, 1405, 1406, 1407, 1408, 1409, 1410, 1411, 1412, 1413, 1414, 1415, 1416, 1417, 1418, 1419,
+                                                         1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1210, 1211, 1212, 1213, 1214, 1215, 1216, 1217, 1218, 1219,
+                                                         1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019,
+                                                         800, 801, 802, 803, 804, 805, 806, 807, 808, 809, 810, 811, 812, 813, 814, 815, 816, 817, 818, 819,
+                                                         600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619,
+                                                         400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419,
+                                                         200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219,
+                                                         0, 1, 2, 3, 4,5,6,7,8,9,10,11,12,13,14,15,16,17,18, 19])
         
         # Collision Node
         CollNode = Phantom.createChild('Coll')
+        CollNode.createObject('RegularGridTopology', name='loader', n='20 10 11', min='-34.35 -17.9 -18.65', max='34.35 17.9 18.65')
         CollNode.createObject('MechanicalObject', name='coll', template='Vec3d')
         CollNode.createObject('TTriangleModel')
         CollNode.createObject('TLineModel')
@@ -91,6 +106,7 @@ class MeshEnv (Sofa.PythonScriptController):
         Instrument = rootNode.createChild('Instrument')
         Instrument.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         Instrument.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
+#        Instrument.createObject('SphereGridTopology', nx=5, ny=5, nz=5, radius='3.5')
         Instrument.createObject('MeshObjLoader', name='loader', filename='mesh/sphere.obj')
         Instrument.createObject('MechanicalObject', name='mecha', template='Rigid3d')
         Instrument.createObject('UniformMass', totalMass=1e3)
@@ -98,7 +114,7 @@ class MeshEnv (Sofa.PythonScriptController):
 
         # Collision Node
         CollNode = Instrument.createChild('Coll')
-        CollNode.createObject('SphereGridTopology', nx=5, ny=5, nz=5, radius='4')
+        CollNode.createObject('SphereGridTopology', nx=5, ny=5, nz=5, radius='3.5')
         CollNode.createObject('MechanicalObject', name='coll', template='Vec3d')
         CollNode.createObject('TTriangleModel')
         CollNode.createObject('TLineModel')
