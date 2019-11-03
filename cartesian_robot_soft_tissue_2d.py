@@ -10,19 +10,23 @@ use_network = True
 if use_network:
     import torch
     sys.path.insert(0,'../network/deformable/')
-    from model import UNet3D
+    from model2d import UNet
 
 time_scale = 200.0
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
-all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473] 
-data_file = 11
+all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473]
+data_file = 2
 folder_name = 'data' + str(data_file)
 #folder_name = 'calibration'
 
+scale = torch.zeros((1,3,1,1))
+scale[0,:,0,0] = torch.tensor([5.28, 7.16, 7.86])/2
+scale = scale.cuda()
+
 def correct(mesh,x):
     corrected = mesh.clone()
-    x = (x-0.5)*10
-    corrected[:,:,:,-1,:] = mesh[:,:,:,-1,:] + x[:,:,:,-1,:]
+    x = (x-0.5)*scale
+    corrected = mesh + x
     return corrected
 
 class MeshEnv (Sofa.PythonScriptController):
@@ -36,7 +40,7 @@ class MeshEnv (Sofa.PythonScriptController):
     if use_network:
         in_channels = 3
         out_channels = 3        
-        network_path = Path('../network/deformable/checkpoints/models/model_14.pt')
+        network_path = Path('../network/deformable/checkpoints/models2d/model_39.pt')
         device = torch.device('cuda') 
     
     # Set so the first position is at centre of the platform
@@ -78,7 +82,7 @@ class MeshEnv (Sofa.PythonScriptController):
         Phantom.createObject('TetrahedronSetTopologyModifier')
         Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e4', poissonRatio='0.44')
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus='5e3', poissonRatio='0.44')
         Phantom.createObject('UniformMass', totalMass=104.1)
         Phantom.createObject('UncoupledConstraintCorrection')
 
@@ -160,7 +164,7 @@ class MeshEnv (Sofa.PythonScriptController):
     def initGraph(self, node):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
         if use_network:
-            self.net = UNet3D(in_channels=self.in_channels, out_channels=self.out_channels)
+            self.net = UNet(in_channels=self.in_channels, out_channels=self.out_channels)
             # Load previous model if requested
             if self.network_path.exists():
                 state = torch.load(str(self.network_path))
@@ -199,23 +203,27 @@ class MeshEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
+
         if self.partial_step == time_scale:
             mesh_pos = np.array(self.Phantom.getObject('mecha').position)
+                
             if use_network:
                 difference = self.robot_pos[self.robot_step,1:8] - self.robot_pos[self.robot_step-1,1:8]
                 robot_pos = torch.tensor(float(self.partial_step-1/time_scale) * difference + self.robot_pos[self.robot_step,1:8]).to(self.device)
-                mesh_pos = np.array(self.Phantom.getObject('mecha').position)
                 robot_pos = robot_pos.unsqueeze(0).float()
                 pos = torch.tensor(mesh_pos[self.grid_order].reshape(13, 5, 5, 3)).to(self.device).float()
-                pos = pos.permute(3, 0, 1, 2).unsqueeze(0)
+                pos = pos.permute(3, 0, 1, 2).unsqueeze(0)[:,:,:,-1,:]
                 network_pos = self.net(robot_pos, pos)
                 corrected = correct(pos, network_pos).detach().cpu().numpy()
-                network_top = corrected[:,:,:,-1,:].reshape(3,-1).transpose()
-#            print(mesh_pos[grid_top])
-#            print(network_top)
+                network_top = corrected.reshape(3,-1).transpose()
+                #            print(mesh_pos[grid_top])
+                #            print(network_top)
                 mesh_pos[self.grid_top] = network_top
-#            print(mesh_pos)
+                #            print(mesh_pos)
+                #            self.Phantom.getObject('mecha').position = geo.arrToStr(mesh_pos)
+                #            exit()
 
+#            pos = np.array(self.Phantom.getObject('mecha').position)
             ordered_pos = mesh_pos[self.grid_order]
             np.savetxt(folder_name + "/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
 
