@@ -6,24 +6,29 @@ import numpy as np
 from pathlib import Path
 import geometry_util as geo
 
-use_network = True
+use_network = False
 if use_network:
     import torch
     sys.path.insert(0,'../network/deformable/')
     from model import UNet3D
 
+    scale = torch.zeros((1,3,1,1,1))
+    scale[0,:,0,0,0] = torch.tensor([5.28, 7.16, 7.86])/2
+    scale = scale.cuda()
+
+    def correct(mesh,x):
+        corrected = mesh.clone()
+        x = (x-0.5)*scale
+        corrected = mesh + x
+        return corrected
+
+    
 time_scale = 200.0
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
 all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473] 
-data_file = 11
+data_file = 1
 folder_name = 'data' + str(data_file)
 #folder_name = 'calibration'
-
-def correct(mesh,x):
-    corrected = mesh.clone()
-    x = (x-0.5)*10
-    corrected[:,:,:,-1,:] = mesh[:,:,:,-1,:] + x[:,:,:,-1,:]
-    return corrected
 
 class MeshEnv (Sofa.PythonScriptController):
     robot_step = 0
@@ -36,13 +41,12 @@ class MeshEnv (Sofa.PythonScriptController):
     if use_network:
         in_channels = 3
         out_channels = 3        
-        network_path = Path('../network/deformable/checkpoints/models/model_14.pt')
+        network_path = Path('../network/deformable/checkpoints/2019-11-10-models/model_30.pt')
         device = torch.device('cuda') 
     
     # Set so the first position is at centre of the platform
     def __init__(self, node, commandLineArguments) : 
-        self.count = 0
-        self.commandLineArguments = commandLineArguments
+        self.count = self.commandLineArguments = commandLineArguments
         print("Command line arguments for python : "+str(commandLineArguments))
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
         self.robot_pos = np.genfromtxt('../dataset/2019-10-09-GelPhantom1/dvrk/' + folder_name  + '_robot_cartesian_processed_interpolated.csv', delimiter=',')
@@ -78,12 +82,12 @@ class MeshEnv (Sofa.PythonScriptController):
         Phantom.createObject('TetrahedronSetTopologyModifier')
         Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e4', poissonRatio='0.44')
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus='5e3', poissonRatio='0.44')
         Phantom.createObject('UniformMass', totalMass=104.1)
         Phantom.createObject('UncoupledConstraintCorrection')
 
 # This is for SimpleBeamTetra_fine.msh
-        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
+#        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
 
 # This is for SimpleBeamTetra_fine2.msh
 #        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200,                                                    43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59,
