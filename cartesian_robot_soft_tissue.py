@@ -6,7 +6,7 @@ import numpy as np
 from pathlib import Path
 import geometry_util as geo
 
-use_network = False
+use_network = True
 if use_network:
     import torch
     sys.path.insert(0,'../network/deformable/')
@@ -26,7 +26,7 @@ if use_network:
 time_scale = 200.0
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
 all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473] 
-data_file = 1
+data_file = 2
 folder_name = 'data' + str(data_file)
 #folder_name = 'calibration'
 
@@ -41,7 +41,7 @@ class MeshEnv (Sofa.PythonScriptController):
     if use_network:
         in_channels = 3
         out_channels = 3        
-        network_path = Path('../network/deformable/checkpoints/2019-11-10-models/model_30.pt')
+        network_path = Path('../network/deformable/checkpoints/models/model_14.pt')
         device = torch.device('cuda') 
     
     # Set so the first position is at centre of the platform
@@ -82,26 +82,26 @@ class MeshEnv (Sofa.PythonScriptController):
         Phantom.createObject('TetrahedronSetTopologyModifier')
         Phantom.createObject('TetrahedronSetTopologyAlgorithms')
         Phantom.createObject('MechanicalObject', name='mecha', template='Vec3d', scale3d=scale)
-        Phantom.createObject('TetrahedronFEMForceField', youngModulus='5e3', poissonRatio='0.44')
+        Phantom.createObject('TetrahedronFEMForceField', youngModulus='1e1', poissonRatio='0.44')
         Phantom.createObject('UniformMass', totalMass=104.1)
         Phantom.createObject('UncoupledConstraintCorrection')
 
 # This is for SimpleBeamTetra_fine.msh
-#        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
+        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200, 43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59])
 
 # This is for SimpleBeamTetra_fine2.msh
 #        Phantom.createObject('FixedConstraint', indices=[12, 107, 27, 115, 13, 203, 45, 211, 14, 285, 293, 15, 96, 94, 109, 114, 113, 210, 209, 273, 292, 291, 23, 95, 22, 104, 25, 192, 41, 200,                                                    43, 274, 55, 282, 57, 88, 90, 91, 92, 105, 187, 188, 189, 201, 269, 270, 271, 283, 0, 66, 18, 77, 1, 164, 37, 175, 2, 246, 51, 257, 3, 191, 205, 287, 59,
 #                                                         571, 580, 616, 608, 1171, 1180, 1216, 1208, 1719, 1728, 1764, 1756,
-#                                                         492, 487, 572, 582, 581, 615, 617, 606, 603, 1089, 1172, 1182, 1181, 1215, 1217, 1206, 1203, 1637, 1720, 1730, 1729, 1763, 1765, 1754, 1751,
- #                                                        490, 574, 645, 611, 1092, 1174, 1245, 1211, 1640, 1722, 1793, 1759,
- #                                                        500, 501, 495, 493, 576, 644, 641, 610, 609, 1101, 1096, 1094, 1176, 1244, 1241, 1210, 1209, 1649, 1644, 1642, 1724, 1792, 1789, 1758, 1757,
- #                                                        499, 494, 558, 561, 1100, 1095, 1158, 1161, 1706, 1709,
- #                                                        464, 465, 553, 552, 478, 559, 563, 562, 1067, 1153, 1152, 1079, 1159, 1163, 1162, 1615, 1643, 1700, 1627, 1628, 1707, 1711, 1710,
- #                                                        466, 551, 479, 555, 1068, 1151, 1081, 1155, 1616, 1699, 1629, 1703,
- #                                                        455, 456, 458, 460, 474, 475, 471, 473, 557, 1059, 1061, 1063, 1076, 1077, 1073, 1075, 1157, 1607, 1609, 1611, 1624, 1625, 1621, 1623, 1705,
- #                                                        326, 343, 388, 380, 930, 947, 992, 984, 1478, 1495, 1540, 1532,
- #                                                        477, 1701, 1080, 1648
- #                                                        ])
+#                                                        492, 487, 572, 582, 581, 615, 617, 606, 603, 1089, 1172, 1182, 1181, 1215, 1217, 1206, 1203, 1637, 1720, 1730, 1729, 1763, 1765, 1754, 1751,
+#                                                        490, 574, 645, 611, 1092, 1174, 1245, 1211, 1640, 1722, 1793, 1759,
+#                                                        500, 501, 495, 493, 576, 644, 641, 610, 609, 1101, 1096, 1094, 1176, 1244, 1241, 1210, 1209, 1649, 1644, 1642, 1724, 1792, 1789, 1758, 1757,
+#                                                        499, 494, 558, 561, 1100, 1095, 1158, 1161, 1706, 1709,
+#                                                        464, 465, 553, 552, 478, 559, 563, 562, 1067, 1153, 1152, 1079, 1159, 1163, 1162, 1615, 1643, 1700, 1627, 1628, 1707, 1711, 1710,
+#                                                        466, 551, 479, 555, 1068, 1151, 1081, 1155, 1616, 1699, 1629, 1703,
+#                                                        455, 456, 458, 460, 474, 475, 471, 473, 557, 1059, 1061, 1063, 1076, 1077, 1073, 1075, 1157, 1607, 1609, 1611, 1624, 1625, 1621, 1623, 1705,
+#                                                        326, 343, 388, 380, 930, 947, 992, 984, 1478, 1495, 1540, 1532,
+#                                                        477, 1701, 1080, 1648
+#                                                        ])
 
         
 # This is for SimpleBeamHexa_fine.msh
@@ -221,7 +221,7 @@ class MeshEnv (Sofa.PythonScriptController):
 #            print(mesh_pos)
 
             ordered_pos = mesh_pos[self.grid_order]
-            np.savetxt(folder_name + "/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
+            np.savetxt(folder_name + "_3D/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
 
         return 0
 

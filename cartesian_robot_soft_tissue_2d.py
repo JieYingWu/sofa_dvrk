@@ -25,7 +25,7 @@ if use_network:
 time_scale = 200.0
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
 all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473]
-data_file = 1
+data_file = 2
 folder_name = 'data' + str(data_file)
 #folder_name = 'calibration'
 
@@ -40,7 +40,7 @@ class MeshEnv (Sofa.PythonScriptController):
     if use_network:
         in_channels = 3
         out_channels = 3        
-        network_path = Path('../network/deformable/checkpoints/2019-11-05-models2d/model_19.pt')
+        network_path = Path('../network/deformable/checkpoints/models2d/model_24.pt')
         device = torch.device('cuda') 
     
     # Set so the first position is at centre of the platform
@@ -225,7 +225,7 @@ class MeshEnv (Sofa.PythonScriptController):
 
 #            pos = np.array(self.Phantom.getObject('mecha').position)
             ordered_pos = mesh_pos[self.grid_order]
-            np.savetxt(folder_name + "/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
+            np.savetxt(folder_name + "_2D/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
 
         return 0
 
