@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 import math
 import Sofa
@@ -13,7 +14,7 @@ if use_network:
     from model import UNet3D
 
     scale = torch.zeros((1,3,1,1,1))
-    scale[0,:,0,0,0] = torch.tensor([5.28, 7.16, 7.86])/2
+    scale[0,:,0,0,0] = utils.scale
     scale = scale.cuda()
 
     def correct(mesh,x):
@@ -23,13 +24,11 @@ if use_network:
         return corrected
 
     
-time_scale = 200.0
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
 all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473]
 
 class MeshEnv (Sofa.PythonScriptController):
     robot_step = 0
-    partial_step = float(time_scale) # Start from full - partial step ranges from 1 to time_scale
     write_step = 0
     step = 0.05
     axis_scale=100
@@ -47,15 +46,22 @@ class MeshEnv (Sofa.PythonScriptController):
 
         print("Command line arguments for python : "+str(commandLineArguments))
         data_file = int(commandLineArguments[1])
+        self.time_scale = int(all_time_steps[data_file]*10000)
+        print(self.time_scale)
+        self.partial_step = self.time_scale
         self.folder_name = 'data' + str(data_file)
+        try:
+            Path(self.folder_name).mkdir(mode=0o777, parents=False)
+        except OSError:
+            print("Model path exists")
         #folder_name = 'calibration'
 
 #        self.robot_pos = np.genfromtxt('../dataset/test/' + 'data_cartesian_processed.csv', delimiter=',')
         self.robot_pos = np.genfromtxt('../dataset/2019-10-09-GelPhantom1/dvrk/' + self.folder_name  + '_robot_cartesian_processed_interpolated.csv', delimiter=',')
         self.createGraph(node)
         self.Instrument.getObject('mecha').position = geo.arrToStr(self.robot_pos[self.robot_step,1:8])
-        self.grid_order = np.loadtxt('grid_order.txt').astype(int)
-        self.grid_top = self.grid_order.reshape(13,5,5)[:,-1,:]
+        self.grid_order = np.loadtxt('fine_grid_order.txt').astype(int)
+        self.grid_top = self.grid_order.reshape(25,9,9)[:,-1,:]
         self.grid_top = self.grid_top.reshape(-1)
 
     def output(self):
@@ -75,7 +81,7 @@ class MeshEnv (Sofa.PythonScriptController):
         # rootNode/phantom
         Phantom = rootNode.createChild('Phantom')
         scale=[22.9, 35.8, 39.3]
-        translation=[-34.35/22.9, -17.9/35.8, -19.65/39.3]
+        translation=[-34.35/scale[0], -17.9/scale[1], -19.65/scale[2]]
         Phantom.createObject('EulerImplicitSolver', printLog='false', rayleighStiffness='0.1', name='odesolver', rayleighMass='0.1')
         Phantom.createObject('CGLinearSolver', threshold='1e-9', tolerance='1e-9', name='linearSolver', iterations='25')
         Phantom.createObject('MeshGmshLoader', name='loader', filename='meshes/SimpleBeamTetra_fine2.msh', translation=translation)
@@ -206,7 +212,7 @@ class MeshEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        if self.partial_step == time_scale:
+        if self.partial_step == self.time_scale:
             mesh_pos = np.array(self.Phantom.getObject('mecha').position)
             if use_network:
                 difference = self.robot_pos[self.robot_step,1:8] - self.robot_pos[self.robot_step-1,1:8]
@@ -226,7 +232,7 @@ class MeshEnv (Sofa.PythonScriptController):
 #            print(mesh_pos)
 
             ordered_pos = mesh_pos[self.grid_order]
-            np.savetxt(self.folder_name + "_3D/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
+            np.savetxt(self.folder_name + "/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
 
         return 0
 
@@ -265,9 +271,9 @@ class MeshEnv (Sofa.PythonScriptController):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
 
         if (self.robot_step < self.robot_pos.shape[0]-1):
-            if (self.partial_step < time_scale):
+            if (self.partial_step < self.time_scale):
                 difference = self.robot_pos[self.robot_step+1,1:8] - self.robot_pos[self.robot_step,1:8]
-                update = float(self.partial_step/time_scale) * difference + self.robot_pos[self.robot_step,1:8]
+                update = float(self.partial_step/float(self.time_scale)) * difference + self.robot_pos[self.robot_step,1:8]
                 self.Instrument.getObject('mecha').position = geo.arrToStr(update)
                 self.partial_step += 1
             else:
@@ -288,7 +294,7 @@ def createScene(rootNode):
         commandLineArguments = sys.argv
     print(commandLineArguments)
     data_file = int(commandLineArguments[1])
-    rootNode.findData('dt').value = all_time_steps[data_file]/time_scale
+    rootNode.findData('dt').value = 0.0001
     rootNode.findData('gravity').value = '0 0 0'
     my_env = MeshEnv(rootNode,commandLineArguments)
     
