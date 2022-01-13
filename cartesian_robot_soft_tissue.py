@@ -8,21 +8,6 @@ from pathlib import Path
 import geometry_util as geo
 
 use_network = False
-if use_network:
-    import torch
-    sys.path.insert(0,'../network/deformable/')
-    from model import UNet3D
-
-    scale = torch.zeros((1,3,1,1,1))
-    scale[0,:,0,0,0] = utils.scale
-    scale = scale.cuda()
-
-    def correct(mesh,x):
-        corrected = mesh.clone()
-        x = (x-0.5)*scale
-        corrected = mesh + x
-        return corrected
-
     
 # Average from rosbags (time/# messages), 12 and potentially future 13 are calibration(2) bag
 all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332, 0.0332, 0.0328, 0.0455, 0.0473]
@@ -30,16 +15,8 @@ all_time_steps = [0.0332, 0.0332, 0.0329, 0.0332, 0.0332, 0.0333, 0.0331, 0.0332
 class MeshEnv (Sofa.PythonScriptController):
     robot_step = 0
     write_step = 0
-    step = 0.05
-    axis_scale=100
+    write_index = 0
 
-    # If using network
-    if use_network:
-        in_channels = 3
-        out_channels = 3        
-        network_path = Path('../network/deformable/checkpoints/models/model_5.pt')
-        device = torch.device('cuda') 
-    
     # Set so the first position is at centre of the platform
     def __init__(self, node, commandLineArguments) :
 
@@ -172,18 +149,6 @@ class MeshEnv (Sofa.PythonScriptController):
 
     def initGraph(self, node):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        if use_network:
-            self.net = UNet3D(in_channels=self.in_channels, out_channels=self.out_channels)
-            # Load previous model if requested
-            if self.network_path.exists():
-                state = torch.load(str(self.network_path))
-                self.net.load_state_dict(state['model'])
-                self.net = self.net.to(self.device)
-                print('Restored model')
-            else:
-                print('Failed to restore model')
-                exit()
-            self.net.eval()
         return 0
 
     # Note: Hold control when key is pressed
@@ -212,27 +177,15 @@ class MeshEnv (Sofa.PythonScriptController):
 
     def onEndAnimationStep(self, deltaTime):
         ## Please feel free to add an example for a simple usage in /home/trs/sofa/build/unstable//home/trs/sofa/src/sofa/applications/plugins/SofaPython/scn2python.py
-        if self.partial_step == self.time_scale:
+        if self.write_step == 10:
             mesh_pos = np.array(self.Phantom.getObject('mecha').position)
-            if use_network:
-                difference = self.robot_pos[self.robot_step,1:8] - self.robot_pos[self.robot_step-1,1:8]
-                robot_pos = torch.tensor(float(self.partial_step-1/time_scale) * difference + self.robot_pos[self.robot_step,1:8]).to(self.device)
-                mesh_pos = np.array(self.Phantom.getObject('mecha').position)
-                robot_pos = robot_pos.unsqueeze(0).float()
-                pos = torch.tensor(mesh_pos[self.grid_order].reshape(13, 5, 5, 3)).to(self.device).float()
-                pos = pos.permute(3, 0, 1, 2).unsqueeze(0)
-                network_pos = self.net(robot_pos, pos)
-                corrected = correct(pos, network_pos).detach().cpu().numpy()
-                network_top = corrected[:,:,:,-1,:].reshape(3,-1).transpose()
-                mesh_pos[self.grid_order] = corrected.reshape(3,-1).transpose()
-                self.Phantom.getObject('mecha').position = geo.arrToStr(mesh_pos)
-#            print(mesh_pos[grid_top])
-#            print(network_top)
-                mesh_pos[self.grid_top] = network_top
-#            print(mesh_pos)
-
+            self.mesh_pos = np.array(self.Phantom.getObject('mecha').position)
             ordered_pos = mesh_pos[self.grid_order]
-            np.savetxt(self.folder_name + "/position" + '%04d' % (self.robot_step) + ".txt", ordered_pos)
+            np.savetxt(self.folder_name + "/position" + '%04d' % (self.write_index) + ".txt", ordered_pos)
+            self.write_step = 0
+            self.write_index += 1
+        else:
+            self.write_step += 1
 
         return 0
 
@@ -284,6 +237,8 @@ class MeshEnv (Sofa.PythonScriptController):
             self.rootNode.getRootContext().animate = False
         return 0
 
+# sofa cartesian_robot_soft_tissue.py --argv <run_num>
+    
 def createScene(rootNode):
     np.set_printoptions(threshold=sys.maxsize)
     try : 
